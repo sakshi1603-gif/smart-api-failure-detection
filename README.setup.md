@@ -27,11 +27,21 @@ smart-api-failure-detection/
 ├── backend/
 │   ├── index.js
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── node_modules/
 │   └── .gitignore
 │
 ├── frontend/
-│   └── (empty initially)
+│   ├── node_modules/
+│   ├── public/
+│   ├── src/
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── App.css
+│   │   └── ...
+│   ├── package.json
+│   ├── package-lock.json
+│   └── .gitignore
 │
 ├── README.md
 └── README.setup.md
@@ -79,11 +89,10 @@ http://localhost:3000
 
 
 🌐 Frontend Setup (React)
-(Frontend will be added later in the project)
-
-When frontend is available:
+From the project root:
+```bash
 cd frontend
-npm install
+npx create-react-app .
 npm start
 
 
