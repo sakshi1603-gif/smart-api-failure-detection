@@ -1,0 +1,29 @@
+const mongoose = require("mongoose");
+
+const apiSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  url: {
+    type: String,
+    required: true
+  },
+  method: {
+    type: String,
+    default: "GET"
+  },
+  slaLatency: {
+    type: Number,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const ApiModel = mongoose.model("Api", apiSchema);
+
+module.exports = ApiModel;
