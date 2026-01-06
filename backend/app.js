@@ -1,17 +1,16 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
+const apiRoutes = require("./route/Api.routes");
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT  = 3000;
 
 connectDB();
 
-app.get("/", (req, res) => {
-  res.send("Smart API Failure Detection System is running");
-});
+app.use("/apis", apiRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -24,6 +24,5 @@ const apiSchema = new mongoose.Schema({
   }
 });
 
-const ApiModel = mongoose.model("Api", apiSchema);
+module.exports = mongoose.model("Api", apiSchema);
 
-module.exports = ApiModel;
