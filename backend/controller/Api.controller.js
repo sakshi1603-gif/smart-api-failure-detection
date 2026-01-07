@@ -15,3 +15,4 @@ exports.getApis = async (req, res) => {
     const apis = await Api.find();
     res.status(200).json(apis);
 };
+// SLA = Service Level Agreement The maximum response time that an API is allowed to take, as promised in an SLA.
