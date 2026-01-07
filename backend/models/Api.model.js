@@ -21,6 +21,12 @@ const apiSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  lastCheck: {
+    statusCode: Number,
+    responseTime: Number,
+    success: Boolean,
+    checkedAt: Date
   }
 });
 

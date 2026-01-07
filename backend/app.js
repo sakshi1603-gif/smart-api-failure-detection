@@ -9,6 +9,7 @@ const app = express();
 const PORT  = 3000;
 
 connectDB();
+app.use(express.json());
 
 app.use("/apis", apiRoutes);
 
