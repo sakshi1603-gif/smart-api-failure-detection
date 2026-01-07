@@ -1,5 +1,4 @@
 const Api = require("../models/Api.model");
-const logHealthCheck = require("../utils/healthLogger");
 
 //POST /apis
 exports.registerApi = async (req, res) => {
