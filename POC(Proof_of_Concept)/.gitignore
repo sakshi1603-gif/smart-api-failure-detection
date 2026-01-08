@@ -1,2 +1,3 @@
-node_modules
+node_modules/
+POC(Proof_of_Concept)/node_modules/
 .env
