@@ -1,8 +1,9 @@
 require("dotenv").config();
+require("./cron/monitor.cron");
+
+
 const connectDB = require("./config/db");
 const app = require("./app");
-const { monitorAllAPIs } =
-  require("./services/apiCaller.service");
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,7 +12,6 @@ async function startServer() {
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    monitorAllAPIs();
   });
 }
 
