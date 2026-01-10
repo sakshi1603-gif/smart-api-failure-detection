@@ -1,5 +1,3 @@
-
-
 function detectHealthStatus(result, slaLatency) {
   if (result.timedOut || result.statusCode >= 500) {
     return "FAILED";
