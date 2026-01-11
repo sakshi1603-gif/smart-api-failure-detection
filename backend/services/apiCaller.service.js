@@ -14,7 +14,7 @@ async function monitorAllAPIs() {
       const response = await axios({
         method: api.method,
         url: api.url,
-        timeout: TIMEOUT
+        timeout: TIMEOUT  //HOW LONG to wait for an API response
       });
 
       const responseTime = Date.now() - start;
