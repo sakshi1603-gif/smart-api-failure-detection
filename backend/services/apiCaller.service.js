@@ -35,7 +35,7 @@ async function monitorAllAPIs() {
         checkedAt: new Date()
       });
       if (healthStatus === "FAILED") {
-            retryFailedApi(api);
+            retryFailedApi(api);// not awaited: retry runs asynchronously to avoid blocking monitoring of other APIs 
       }
       console.log(api.url, "→", responseTime + "ms", "→", response.status);
 
@@ -61,7 +61,7 @@ async function monitorAllAPIs() {
         checkedAt: new Date()
       });
       if (healthStatus === "FAILED") {
-            retryFailedApi(api);
+            retryFailedApi(api); // not awaited: retry runs asynchronously to avoid blocking monitoring of other APIs
       }
 
       console.log(api.url, "→", responseTime + "ms", "→ FAILED");
