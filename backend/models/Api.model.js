@@ -18,6 +18,16 @@ const apiSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+
+  currentHealthStatus: {
+    type: String,
+    enum: ["HEALTHY", "DEGRADED"],
+    default: "HEALTHY"
+  },
+  degradationReason: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
