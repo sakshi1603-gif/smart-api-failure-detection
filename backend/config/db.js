@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const dblink = "";
+  const dblink = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.l1a6euh.mongodb.net/api-monitor?retryWrites=true&w=majority`;
+
 
 
     await mongoose.connect(dblink);

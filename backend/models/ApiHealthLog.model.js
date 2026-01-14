@@ -16,6 +16,14 @@ const apiHealthLogSchema = new mongoose.Schema({
     enum: ["FAILED", "SLOW", "HEALTHY"],
     required: true
   },
+  retryAttempt: {
+    type: Number,
+    default: 0
+  },
+  isRetry: {
+    type: Boolean,
+    default: false
+  },
 
   checkedAt: {
     type: Date,
