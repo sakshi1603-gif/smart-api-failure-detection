@@ -62,4 +62,4 @@ function decideDegradation(logs) {
   };
 }
 
-
+module.export={getRecentHealthLogs,decideDegradation};
