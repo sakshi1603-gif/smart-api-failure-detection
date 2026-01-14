@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const dblink = "mongodb+srv://rushabhkulkarni0915_db_user:BrYhJSqe0EnVUFHa@cluster0.bcwgwjc.mongodb.net/?appName=Cluster0";
+    const dblink = "";
 
 
     await mongoose.connect(dblink);
