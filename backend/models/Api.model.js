@@ -8,15 +8,23 @@ const apiSchema = new mongoose.Schema({
   },
   url: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^(https?:\/\/).+/.test(v);
+      },
+      message: "Please provide a valid URL"
+    }
   },
   method: {
     type: String,
+    enum: ["GET", "POST", "PUT", "DELETE"],
     default: "GET"
   },
   slaLatency: {
     type: Number,
-    required: true
+    required: true,
+    min: 0
   },
 
   currentHealthStatus: {

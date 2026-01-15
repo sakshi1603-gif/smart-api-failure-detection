@@ -18,25 +18,7 @@ exports.getApis = async (req, res) => {
     res.status(200).json(apis);
 };
 
-exports.updateLastCheck = async (apiId, result) => {
-  const api = await Api.findByIdAndUpdate(
-    apiId,
-    {
-      lastCheck: {
-        statusCode: result.statusCode,
-        responseTime: result.responseTime,
-        success: result.success,
-        checkedAt: new Date()
-      }
-    },
-    { new: true }
-  );
-
-  if (api) {
-    logHealthCheck(api.name, result);
-  }
-};
-
+//GET /apis/:id/history
 exports.getApiHistory = async (req, res) => {
   try {
     const { id } = req.params;
