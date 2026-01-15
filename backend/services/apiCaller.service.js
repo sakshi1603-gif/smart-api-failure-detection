@@ -2,7 +2,7 @@ const axios = require("axios");
 const ApiModel = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const { detectHealthStatus } = require("./failureDetector.service");
-
+const {retryFailedApi}=require("./retry.service.js");
 const TIMEOUT = 5000;
 
 async function monitorAllAPIs() {
@@ -34,7 +34,9 @@ async function monitorAllAPIs() {
         failureType: "NONE",
         checkedAt: new Date()
       });
-
+      if (healthStatus === "FAILED") {
+            retryFailedApi(api);// not awaited: retry runs asynchronously to avoid blocking monitoring of other APIs 
+      }
       console.log(api.url, "→", responseTime + "ms", "→", response.status);
 
     } catch (err) {
@@ -58,6 +60,9 @@ async function monitorAllAPIs() {
         failureType,
         checkedAt: new Date()
       });
+      if (healthStatus === "FAILED") {
+            retryFailedApi(api); // not awaited: retry runs asynchronously to avoid blocking monitoring of other APIs
+      }
 
       console.log(api.url, "→", responseTime + "ms", "→ FAILED");
     }
