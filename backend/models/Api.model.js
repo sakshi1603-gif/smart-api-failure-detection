@@ -9,6 +9,7 @@ const apiSchema = new mongoose.Schema({
   url: {
     type: String,
     required: true,
+    unique: true,
     validate: {
       validator: function(v) {
         return /^(https?:\/\/).+/.test(v);
@@ -29,17 +30,26 @@ const apiSchema = new mongoose.Schema({
 
   currentHealthStatus: {
     type: String,
-    enum: ["HEALTHY", "DEGRADED"],
+    enum: ["HEALTHY", "DEGRADED", "FAILED"],
     default: "HEALTHY"
   },
   degradationReason: {
     type: String,
     default: null
   },
+  isActive: { // Whether the API is actively monitored
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
+//indexes for efficient querying
+apiSchema.index({ url: 1 });
+apiSchema.index({ currentHealthStatus: 1 });
+apiSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model("Api", apiSchema);

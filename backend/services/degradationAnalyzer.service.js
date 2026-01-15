@@ -1,31 +1,45 @@
 const ApiHealthLog = require("../models/ApiHealthLog.model");
+const Api = require("../models/Api.model");
 
-async function getRecentHealthLogs(apiId, limit = 5) {
-  return ApiHealthLog.find({ apiId })
-    .sort({ checkedAt: -1 }) // newest first
-    .limit(limit);
+async function getRecentHealthLogs(apiId, limit = 10) {
+  try {
+    if (!apiId) {
+      throw new Error("API ID is required");
+    }
+
+    const logs = await ApiHealthLog.find({ apiId })
+      .sort({ checkedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    return logs;
+  } catch (error) {
+    console.error("Error fetching health logs:", error);
+    throw error;
+  }
 }
 
-
 function hasConsecutiveFailures(logs, threshold = 3) {
-  let count = 0;
+  if(!logs || logs.length===0) return false;
+
+  let consecutiveFailureCount = 0;
 
   for (const log of logs) {
     if (log.healthStatus === "FAILED") {
-      count++;
+      consecutiveFailureCount++;
 
-      if (count >= threshold) {
+      if (consecutiveFailureCount >= threshold) {
         return true;
     }} else {
       break; // chain broken
     }
   }
-
   return false;
 }
 
-
 function isFrequentlySlow(logs, slowLimit = 4) {
+  if(!logs || logs.length===0) return false;
+
   const slowCount = logs.filter(
     log => log.healthStatus === "SLOW"
   ).length;
@@ -33,33 +47,157 @@ function isFrequentlySlow(logs, slowLimit = 4) {
   return slowCount >= slowLimit;
 }
 
+// Additional helper to check high error rate
+function hasHighErrorRate(logs, errorRateThreshold = 0.5) {
+  if(!logs || logs.length===0) return false;
+  const errorCount = logs.filter(
+    log => log.healthStatus === "FAILED"
+  ).length;
+  const errorRate = errorCount / logs.length;
+  return errorRate >= errorRateThreshold;
+}
 
 function decideDegradation(logs) {
   if (logs.length === 0) {
     return {
-      degraded: false,
-      reason: null
+      isDegraded: false,
+      reason: null,
+      severity: "NONE",
+      recommendation: null
     };
   }
 
   if (hasConsecutiveFailures(logs, 3)) {
     return {
-      degraded: true,
-      reason: "3 consecutive failures detected"
+      isDegraded: true,
+      reason: "3 consecutive failures detected",
+      severity: "CRITICAL",
+      recommendation: "API is Down. Check Server Status and Restart if necessary."
+    };
+  }
+
+  if (hasHighErrorRate(logs, 0.6)) {
+    return {
+      isDegraded: true,
+      reason: "High error rate detected (60%) in recent checks",
+      severity: "HIGH",
+      recommendation: "Investigate recent errors and monitor closely."
     };
   }
 
   if (isFrequentlySlow(logs, 4)) {
     return {
-      degraded: true,
-      reason: "API slow in most recent checks"
+      isDegraded: true,
+      reason: "API is frequently slow (4 or more slow responses)",
+      severity: "MEDIUM",
+      recommendation: "Monitor API performance and consider optimization."
     };
   }
 
   return {
-    degraded: false,
-    reason: null
+    isDegraded: false,
+    reason: null,
+    severity: "NONE",
+    recommendation: null
   };
 }
+
+// Analyze single API degradation status
+async function analyzeApiDegradation(apiId) {
+  try {
+    const api = await Api.findById(apiId);
+    if (!api) {
+      throw new Error("API not found");
+    }
+
+    const recentLogs = await getRecentHealthLogs(apiId, 10);
+    const degradationStatus = decideDegradation(recentLogs);
+
+    return {
+      apiId,
+      apiName: api.name,
+      apiUrl: api.url,
+      currentHealthStatus: api.currentHealthStatus,
+      ...degradationStatus,
+      logsAnalyzed: recentLogs.length
+    };
+  } catch (error) {
+    console.error("Error analyzing API degradation:", error);
+    throw error;
+  }
+}
+
+// Analyze ALL APIs for degradation
+async function analyzeAllApisDegradation() {
+  try {
+    const activeApis = await Api.find({ isActive: true });
+
+    const degradationReport = await Promise.all(
+      activeApis.map(api => analyzeApiDegradation(api._id))
+    );
+
+    // Filter degraded APIs
+    const degradedApis = degradationReport.filter(api => api.isDegraded);
+
+    return {
+      timestamp: new Date(),
+      totalApisAnalyzed: activeApis.length,
+      degradedCount: degradedApis.length,
+      healthyCount: activeApis.length - degradedApis.length,
+      degradedApis,
+      allApis: degradationReport
+    };
+  } catch (error) {
+    console.error("Error analyzing all APIs degradation:", error);
+    throw error;
+  }
+}
+
+// Update API status in database based on degradation
+async function updateApiStatusBasedOnDegradation(apiId) {
+  try {
+    const degradationStatus = await analyzeApiDegradation(apiId);
+
+    if (degradationStatus.isDegraded) {
+      await Api.findByIdAndUpdate(
+        apiId,
+        {
+          currentHealthStatus: "DEGRADED",
+          degradationReason: degradationStatus.reason
+        },
+        { new: true }
+      );
+
+      console.log(`⚠️ ${degradationStatus.apiName} marked as DEGRADED: ${degradationStatus.reason}`);
+    } else {
+      await Api.findByIdAndUpdate(
+        apiId,
+        {
+          currentHealthStatus: "HEALTHY",
+          degradationReason: null
+        },
+        { new: true }
+      );
+
+      console.log(`✅ ${degradationStatus.apiName} is HEALTHY`);
+    }
+
+    return degradationStatus;
+  } catch (error) {
+    console.error("Error updating API status:", error);
+    throw error;
+  }
+}
+
+module.exports = {
+  getRecentHealthLogs,
+  hasConsecutiveFailures,
+  isFrequentlySlow,
+  hasHighErrorRate,
+  decideDegradation,
+  analyzeApiDegradation,
+  analyzeAllApisDegradation,
+  updateApiStatusBasedOnDegradation
+};
 
 
