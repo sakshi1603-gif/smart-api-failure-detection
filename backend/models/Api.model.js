@@ -30,13 +30,20 @@ const apiSchema = new mongoose.Schema({
 
   currentHealthStatus: {
     type: String,
-    enum: ["HEALTHY", "DEGRADED", "FAILED"],
+    enum: ["HEALTHY", "SLOW", "FAILED", "DEGRADED", "BLOCKED"],
     default: "HEALTHY"
   },
+
   degradationReason: {
     type: String,
     default: null
   },
+
+  blockedUntil: {
+    type: Date,
+    default: null
+  },
+
   isActive: { // Whether the API is actively monitored
     type: Boolean,
     default: true
@@ -48,7 +55,6 @@ const apiSchema = new mongoose.Schema({
 });
 
 //indexes for efficient querying
-apiSchema.index({ url: 1 });
 apiSchema.index({ currentHealthStatus: 1 });
 apiSchema.index({ isActive: 1 });
 

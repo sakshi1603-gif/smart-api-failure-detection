@@ -188,6 +188,80 @@ async function updateApiStatusBasedOnDegradation(apiId) {
     throw error;
   }
 }
+async function updateApiStatusBasedOnDegradation(apiId) {
+  try {
+    // 1. Get recent logs
+    const logs = await getRecentHealthLogs(apiId, 10);
+
+    // 2. Check if API should be blocked
+    const shouldBlock = hasConsecutiveFailures(logs, 3);
+
+    // 3. If BLOCK condition satisfied
+    if (shouldBlock) {
+      const BLOCK_COOLDOWN_MINUTES = 5;
+
+      const blockedUntil = new Date(
+        Date.now() + BLOCK_COOLDOWN_MINUTES * 60 * 1000
+      );
+
+      await Api.findByIdAndUpdate(
+        apiId,
+        {
+          currentHealthStatus: "BLOCKED",
+          blockedUntil: blockedUntil,
+          degradationReason: "3 consecutive failures. API temporarily blocked."
+        },
+        { new: true }
+      );
+
+      console.log(
+        `🚫 API ${apiId} BLOCKED until ${blockedUntil}`
+      );
+
+      return {
+        status: "BLOCKED",
+        blockedUntil
+      };
+    }
+
+    // 4. If not blocked, mark as DEGRADED or HEALTHY
+    const degradationStatus = decideDegradation(logs);
+
+    if (degradationStatus.isDegraded) {
+      await Api.findByIdAndUpdate(
+        apiId,
+        {
+          currentHealthStatus: "DEGRADED",
+          degradationReason: degradationStatus.reason,
+          blockedUntil: null
+        },
+        { new: true }
+      );
+
+      return { status: "DEGRADED" };
+    }
+
+    // 5. If everything is fine → HEALTHY
+    await Api.findByIdAndUpdate(
+      apiId,
+      {
+        currentHealthStatus: "HEALTHY",
+        degradationReason: null,
+        blockedUntil: null
+      },
+      { new: true }
+    );
+
+    return { status: "HEALTHY" };
+
+  } catch (error) {
+    console.error(
+      "Error in updateApiStatusBasedOnDegradation:",
+      error
+    );
+    throw error;
+  }
+}
 
 module.exports = {
   getRecentHealthLogs,

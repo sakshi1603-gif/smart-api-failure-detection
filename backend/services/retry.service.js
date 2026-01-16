@@ -2,6 +2,7 @@ const axios = require("axios");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const ApiModel = require("../models/Api.model");
 const { detectHealthStatus } = require("./failureDetector.service");
+const { updateApiStatusBasedOnDegradation } =require("./degradationAnalyzer.service");
 
 const TIMEOUT = 5000;
 const MAX_RETRIES = 3;
@@ -10,6 +11,7 @@ const BASE_DELAY = 10000; // 10 sec
 async function retryFailedApi(api, retryAttempt = 1) {
   if (retryAttempt > MAX_RETRIES) {
     console.log(api.url, "→ Max retries reached");
+    await updateApiStatusBasedOnDegradation(api._id);
     return;
   }
 
