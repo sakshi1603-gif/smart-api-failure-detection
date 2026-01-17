@@ -10,6 +10,9 @@ router.get("/", ApiController.getApis);
 router.get("/:id/history", ApiController.getApiHistory);
 router.get("/:id/retry-history", ApiController.getRetryHistory);
 
+//Blocked APIs routes
+router.get("/status/blocked", ApiController.getBlockedApis);
+
 //degradation analysis routes
 router.get("/:id/degradation", ApiController.getApiDegradationStatus);
 router.get("/degradation/all", ApiController.getAllApisDegradationStatus);

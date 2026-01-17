@@ -156,40 +156,6 @@ async function analyzeAllApisDegradation() {
 // Update API status in database based on degradation
 async function updateApiStatusBasedOnDegradation(apiId) {
   try {
-    const degradationStatus = await analyzeApiDegradation(apiId);
-
-    if (degradationStatus.isDegraded) {
-      await Api.findByIdAndUpdate(
-        apiId,
-        {
-          currentHealthStatus: "DEGRADED",
-          degradationReason: degradationStatus.reason
-        },
-        { new: true }
-      );
-
-      console.log(`⚠️ ${degradationStatus.apiName} marked as DEGRADED: ${degradationStatus.reason}`);
-    } else {
-      await Api.findByIdAndUpdate(
-        apiId,
-        {
-          currentHealthStatus: "HEALTHY",
-          degradationReason: null
-        },
-        { new: true }
-      );
-
-      console.log(`✅ ${degradationStatus.apiName} is HEALTHY`);
-    }
-
-    return degradationStatus;
-  } catch (error) {
-    console.error("Error updating API status:", error);
-    throw error;
-  }
-}
-async function updateApiStatusBasedOnDegradation(apiId) {
-  try {
     // 1. Get recent logs
     const logs = await getRecentHealthLogs(apiId, 10);
 

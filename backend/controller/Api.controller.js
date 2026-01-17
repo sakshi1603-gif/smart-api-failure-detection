@@ -185,3 +185,22 @@ exports.updateApiDegradationStatus = async (req, res) => {
     return res.status(500).json({ error: "Failed to update API degradation status" });
   }
 };
+
+//GET /apis/status/blocked - get all currently blocked APIs
+exports.getBlockedApis = async (req, res) => {
+  try {
+    const blockedApis = await Api.find({
+      currentHealthStatus: "BLOCKED",
+      blockedUntil: { $gt: new Date() }
+    }).select("name url blockedUntil degradationReason");
+
+    return res.status(200).json({
+      count: blockedApis.length,
+      blockedApis,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.error("getBlockedApis error:", err);
+    return res.status(500).json({ error: "Failed to fetch blocked APIs" });
+  }
+};
