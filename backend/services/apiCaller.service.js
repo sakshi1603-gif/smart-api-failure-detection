@@ -39,19 +39,59 @@ async function monitorAllAPIs() {
     /* =======================
        ✅ AUTO-UNBLOCK
     ======================== */
-    if (
-      api.currentHealthStatus === "BLOCKED" &&
-      api.blockedUntil &&
-      new Date() >= api.blockedUntil
-    ) {
-      await ApiModel.findByIdAndUpdate(api._id, {
-        currentHealthStatus: "HEALTHY",
-        blockedUntil: null,
-        degradationReason: null
-      });
+if (
+  api.currentHealthStatus === "BLOCKED" &&
+  api.blockedUntil &&
+  new Date() >= api.blockedUntil
+) {
+    const start = Date.now();
 
-      console.log(`✅ ${api.url} unblocked after cooldown`);
+  try {
+    // 🔹 ONE test request after cooldown
+    const response = await axios({
+      method: api.method,
+      url: api.url,
+      timeout: TIMEOUT
+    });
+
+    const responseTime = Date.now() - start;
+
+    const healthStatus = detectHealthStatus(
+      {
+        statusCode: response.status,
+        timedOut: false,
+        responseTime
+      },
+      api.slaLatency
+    );
+
+    // 🔹 Decide recovery
+    if (healthStatus === "HEALTHY") {
+      api.currentHealthStatus = "HEALTHY";
+      api.degradationReason = null;
+      api.blockedUntil = null;
+    } 
+    else if (healthStatus === "SLOW") {
+      api.currentHealthStatus = "DEGRADED";
+      api.degradationReason = "Slow response after cooldown test";
+      api.blockedUntil = null;
+    } 
+    else {
+      // FAILED again → re-block
+      api.currentHealthStatus = "BLOCKED";
+      api.blockedUntil = new Date(Date.now() + COOLDOWN_TIME);
     }
+
+    await api.save();
+
+  } catch (err) {
+    // timeout / network / 5xx etc
+    api.currentHealthStatus = "BLOCKED";
+    api.blockedUntil = new Date(Date.now() + COOLDOWN_TIME);
+    await api.save();
+  }
+}
+
 
     const start = Date.now();
 
