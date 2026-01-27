@@ -3,9 +3,11 @@ const ApiModel = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const { detectHealthStatus } = require("./failureDetector.service");
 const { retryFailedApi } = require("./retry.service");
-const {
-  updateApiStatusBasedOnDegradation
-} = require("./degradationAnalyzer.service");
+const {updateApiStatusBasedOnDegradation} = require("./degradationAnalyzer.service");
+const { updateRecoveryStatus } = require("./recoveryStatusUpdater.service");
+const { logEvent } = require("./eventLogger.service");
+
+
 
 const TIMEOUT = 5000;
 
@@ -44,10 +46,9 @@ if (
   api.blockedUntil &&
   new Date() >= api.blockedUntil
 ) {
-    const start = Date.now();
+  const start = Date.now();
 
   try {
-    // 🔹 ONE test request after cooldown
     const response = await axios({
       method: api.method,
       url: api.url,
@@ -65,32 +66,25 @@ if (
       api.slaLatency
     );
 
-    // 🔹 Decide recovery
-    if (healthStatus === "HEALTHY") {
-      api.currentHealthStatus = "HEALTHY";
-      api.degradationReason = null;
-      api.blockedUntil = null;
-    } 
-    else if (healthStatus === "SLOW") {
-      api.currentHealthStatus = "DEGRADED";
-      api.degradationReason = "Slow response after cooldown test";
-      api.blockedUntil = null;
-    } 
-    else {
-      // FAILED again → re-block
-      api.currentHealthStatus = "BLOCKED";
-      api.blockedUntil = new Date(Date.now() + COOLDOWN_TIME);
-    }
-
-    await api.save();
+    await updateRecoveryStatus({
+      apiId: api._id,
+      healthStatus,
+      responseTime,
+      statusCode: response.status
+    });
 
   } catch (err) {
-    // timeout / network / 5xx etc
-    api.currentHealthStatus = "BLOCKED";
-    api.blockedUntil = new Date(Date.now() + COOLDOWN_TIME);
-    await api.save();
+    await updateRecoveryStatus({
+      apiId: api._id,
+      healthStatus: "FAILED",
+      responseTime: TIMEOUT,
+      statusCode: 0
+    });
   }
+
+  continue; // 🔒 only ONE test request
 }
+
 
 
     const start = Date.now();
@@ -112,6 +106,14 @@ if (
         },
         api.slaLatency
       );
+      if (previousStatus !== healthStatus) {
+  await logEvent({
+    apiId: api._id,
+    fromStatus: previousStatus,
+    toStatus: healthStatus,
+    reason: "Health status changed during monitoring"
+  });
+}
 
       await ApiHealthLog.create({
         apiId: api._id,
@@ -162,6 +164,16 @@ if (
 
       const failureType =
         err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
+      const previousStatus = api.currentHealthStatus;
+
+if (previousStatus !== healthStatus) {
+  await logEvent({
+    apiId: api._id,
+    fromStatus: previousStatus,
+    toStatus: healthStatus,
+    reason: failureType
+  });
+}
 
       await ApiHealthLog.create({
         apiId: api._id,

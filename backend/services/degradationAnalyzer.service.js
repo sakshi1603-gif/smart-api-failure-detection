@@ -1,231 +1,180 @@
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const Api = require("../models/Api.model");
+const { logEvent } = require("../services/eventLogger.service");
 
+/* =========================
+   FETCH RECENT HEALTH LOGS
+========================= */
 async function getRecentHealthLogs(apiId, limit = 10) {
-  try {
-    if (!apiId) {
-      throw new Error("API ID is required");
-    }
+  if (!apiId) throw new Error("API ID is required");
 
-    const logs = await ApiHealthLog.find({ apiId })
-      .sort({ checkedAt: -1 })
-      .limit(limit)
-      .lean();
-
-    return logs;
-  } catch (error) {
-    console.error("Error fetching health logs:", error);
-    throw error;
-  }
+  return ApiHealthLog.find({ apiId })
+    .sort({ checkedAt: -1 })
+    .limit(limit)
+    .lean();
 }
 
+/* =========================
+   FAILURE / DEGRADATION CHECKS
+========================= */
 function hasConsecutiveFailures(logs, threshold = 3) {
-  if(!logs || logs.length===0) return false;
+  if (!logs || logs.length === 0) return false;
 
-  let consecutiveFailureCount = 0;
-
+  let count = 0;
   for (const log of logs) {
     if (log.healthStatus === "FAILED") {
-      consecutiveFailureCount++;
-
-      if (consecutiveFailureCount >= threshold) {
-        return true;
-    }} else {
-      break; // chain broken
-    }
+      count++;
+      if (count >= threshold) return true;
+    } else break;
   }
   return false;
 }
 
 function isFrequentlySlow(logs, slowLimit = 4) {
-  if(!logs || logs.length===0) return false;
-
-  const slowCount = logs.filter(
-    log => log.healthStatus === "SLOW"
-  ).length;
-
-  return slowCount >= slowLimit;
+  if (!logs || logs.length === 0) return false;
+  return logs.filter(log => log.healthStatus === "SLOW").length >= slowLimit;
 }
 
-// Additional helper to check high error rate
-function hasHighErrorRate(logs, errorRateThreshold = 0.5) {
-  if(!logs || logs.length===0) return false;
-  const errorCount = logs.filter(
-    log => log.healthStatus === "FAILED"
-  ).length;
-  const errorRate = errorCount / logs.length;
-  return errorRate >= errorRateThreshold;
+function hasHighErrorRate(logs, threshold = 0.5) {
+  if (!logs || logs.length === 0) return false;
+  const errorCount = logs.filter(log => log.healthStatus === "FAILED").length;
+  return errorCount / logs.length >= threshold;
 }
 
 function decideDegradation(logs) {
   if (logs.length === 0) {
-    return {
-      isDegraded: false,
-      reason: null,
-      severity: "NONE",
-      recommendation: null
-    };
+    return { isDegraded: false, reason: null, severity: "NONE" };
   }
 
   if (hasConsecutiveFailures(logs, 3)) {
     return {
       isDegraded: true,
       reason: "3 consecutive failures detected",
-      severity: "CRITICAL",
-      recommendation: "API is Down. Check Server Status and Restart if necessary."
+      severity: "CRITICAL"
     };
   }
 
   if (hasHighErrorRate(logs, 0.6)) {
     return {
       isDegraded: true,
-      reason: "High error rate detected (60%) in recent checks",
-      severity: "HIGH",
-      recommendation: "Investigate recent errors and monitor closely."
+      reason: "High error rate detected",
+      severity: "HIGH"
     };
   }
 
   if (isFrequentlySlow(logs, 4)) {
     return {
       isDegraded: true,
-      reason: "API is frequently slow (4 or more slow responses)",
-      severity: "MEDIUM",
-      recommendation: "Monitor API performance and consider optimization."
+      reason: "API frequently slow",
+      severity: "MEDIUM"
     };
   }
 
+  return { isDegraded: false, reason: null, severity: "NONE" };
+}
+
+/* =========================
+   ANALYZE SINGLE API
+========================= */
+async function analyzeApiDegradation(apiId) {
+  const api = await Api.findById(apiId);
+  if (!api) throw new Error("API not found");
+
+  const logs = await getRecentHealthLogs(apiId, 10);
+  const degradation = decideDegradation(logs);
+
   return {
-    isDegraded: false,
-    reason: null,
-    severity: "NONE",
-    recommendation: null
+    apiId,
+    apiName: api.name,
+    apiUrl: api.url,
+    currentHealthStatus: api.currentHealthStatus,
+    ...degradation,
+    logsAnalyzed: logs.length
   };
 }
 
-// Analyze single API degradation status
-async function analyzeApiDegradation(apiId) {
-  try {
-    const api = await Api.findById(apiId);
-    if (!api) {
-      throw new Error("API not found");
-    }
-
-    const recentLogs = await getRecentHealthLogs(apiId, 10);
-    const degradationStatus = decideDegradation(recentLogs);
-
-    return {
-      apiId,
-      apiName: api.name,
-      apiUrl: api.url,
-      currentHealthStatus: api.currentHealthStatus,
-      ...degradationStatus,
-      logsAnalyzed: recentLogs.length
-    };
-  } catch (error) {
-    console.error("Error analyzing API degradation:", error);
-    throw error;
-  }
-}
-
-// Analyze ALL APIs for degradation
+/* =========================
+   ANALYZE ALL APIS
+========================= */
 async function analyzeAllApisDegradation() {
-  try {
-    const activeApis = await Api.find({ isActive: true });
+  const apis = await Api.find({ isActive: true });
 
-    const degradationReport = await Promise.all(
-      activeApis.map(api => analyzeApiDegradation(api._id))
-    );
+  const report = await Promise.all(
+    apis.map(api => analyzeApiDegradation(api._id))
+  );
 
-    // Filter degraded APIs
-    const degradedApis = degradationReport.filter(api => api.isDegraded);
-
-    return {
-      timestamp: new Date(),
-      totalApisAnalyzed: activeApis.length,
-      degradedCount: degradedApis.length,
-      healthyCount: activeApis.length - degradedApis.length,
-      degradedApis,
-      allApis: degradationReport
-    };
-  } catch (error) {
-    console.error("Error analyzing all APIs degradation:", error);
-    throw error;
-  }
+  return {
+    timestamp: new Date(),
+    totalApisAnalyzed: apis.length,
+    degradedCount: report.filter(r => r.isDegraded).length,
+    healthyCount: report.filter(r => !r.isDegraded).length,
+    allApis: report
+  };
 }
 
-// Update API status in database based on degradation
+/* =========================
+   UPDATE API STATUS (DAY 11)
+========================= */
 async function updateApiStatusBasedOnDegradation(apiId) {
   try {
-    // 1. Get recent logs
+    const api = await Api.findById(apiId);
+    if (!api) throw new Error("API not found");
+
+    const previousStatus = api.currentHealthStatus;
     const logs = await getRecentHealthLogs(apiId, 10);
 
-    // 2. Check if API should be blocked
-    const shouldBlock = hasConsecutiveFailures(logs, 3);
-
-    // 3. If BLOCK condition satisfied
-    if (shouldBlock) {
+    /* ---------- BLOCK CONDITION ---------- */
+    if (hasConsecutiveFailures(logs, 3)) {
       const BLOCK_COOLDOWN_MINUTES = 5;
 
       const blockedUntil = new Date(
         Date.now() + BLOCK_COOLDOWN_MINUTES * 60 * 1000
       );
 
-      await Api.findByIdAndUpdate(
-        apiId,
-        {
-          currentHealthStatus: "BLOCKED",
-          blockedUntil: blockedUntil,
-          degradationReason: "3 consecutive failures. API temporarily blocked."
-        },
-        { new: true }
-      );
+      await Api.findByIdAndUpdate(apiId, {
+        currentHealthStatus: "BLOCKED",
+        blockedUntil,
+        degradationReason: "3 consecutive failures. API temporarily blocked."
+      });
 
-      console.log(
-        `🚫 API ${apiId} BLOCKED until ${blockedUntil}`
-      );
+      // ✅ DAY 11 EVENT LOG (WHY visible)
+      if (previousStatus !== "BLOCKED") {
+        await logEvent({
+          apiId,
+          fromStatus: previousStatus,
+          toStatus: "BLOCKED",
+          reason: "API blocked due to 3 consecutive failures"
+        });
+      }
 
-      return {
-        status: "BLOCKED",
-        blockedUntil
-      };
+      console.log(`🚫 API ${apiId} BLOCKED until ${blockedUntil}`);
+      return { status: "BLOCKED", blockedUntil };
     }
 
-    // 4. If not blocked, mark as DEGRADED or HEALTHY
-    const degradationStatus = decideDegradation(logs);
-
-    if (degradationStatus.isDegraded) {
-      await Api.findByIdAndUpdate(
-        apiId,
-        {
-          currentHealthStatus: "DEGRADED",
-          degradationReason: degradationStatus.reason,
-          blockedUntil: null
-        },
-        { new: true }
-      );
+    /* ---------- DEGRADED ---------- */
+    const degradation = decideDegradation(logs);
+    if (degradation.isDegraded) {
+      await Api.findByIdAndUpdate(apiId, {
+        currentHealthStatus: "DEGRADED",
+        degradationReason: degradation.reason,
+        blockedUntil: null
+      });
 
       return { status: "DEGRADED" };
     }
 
-    // 5. If everything is fine → HEALTHY
-    await Api.findByIdAndUpdate(
-      apiId,
-      {
-        currentHealthStatus: "HEALTHY",
-        degradationReason: null,
-        blockedUntil: null
-      },
-      { new: true }
-    );
+    /* ---------- HEALTHY ---------- */
+    await Api.findByIdAndUpdate(apiId, {
+      currentHealthStatus: "HEALTHY",
+      degradationReason: null,
+      blockedUntil: null
+    });
 
     return { status: "HEALTHY" };
 
-  } catch (error) {
-    console.error(
-      "Error in updateApiStatusBasedOnDegradation:",
-      error
-    );
-    throw error;
+  } catch (err) {
+    console.error("Error in updateApiStatusBasedOnDegradation:", err);
+    throw err;
   }
 }
 
@@ -239,5 +188,3 @@ module.exports = {
   analyzeAllApisDegradation,
   updateApiStatusBasedOnDegradation
 };
-
-
