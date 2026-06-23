@@ -1,0 +1,60 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+th {
+  background: #f3f3f3;
+}
+
+h1,
+h2 {
+  margin-top: 20px;
+}
+.details-container {
+  padding: 20px;
+}
+
+.info-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.section {
+  margin-top: 25px;
+}
+
+.status {
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.HEALTHY {
+  background: lightgreen;
+}
+
+.SLOW {
+  background: orange;
+}
+
+.FAILED {
+  background: tomato;
+}
+
+.DEGRADED {
+  background: violet;
+}
+
+.BLOCKED {
+  background: lightgray;
+}
