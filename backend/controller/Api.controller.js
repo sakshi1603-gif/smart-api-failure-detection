@@ -204,3 +204,21 @@ exports.getBlockedApis = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch blocked APIs" });
   }
 };
+
+exports.getApiById = async (req, res) => {
+  try {
+    const api = await Api.findById(req.params.id);
+
+    if (!api) {
+      return res.status(404).json({
+        error: "API not found",
+      });
+    }
+
+    res.status(200).json(api);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+};

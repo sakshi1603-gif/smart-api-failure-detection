@@ -18,4 +18,5 @@ router.get("/:id/degradation", ApiController.getApiDegradationStatus);
 router.get("/degradation/all", ApiController.getAllApisDegradationStatus);
 router.post("/:id/degradation/update", ApiController.updateApiDegradationStatus);
 
+router.get("/:id", ApiController.getApiById);
 module.exports = router;

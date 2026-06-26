@@ -22,7 +22,7 @@ function Dashboard() {
   const blockedApis = apis.filter((a) => a.currentHealthStatus === "BLOCKED").length;
 
   return (
-    <>
+    <div className="dashboard-page">
       <div className="dashboard-header">
         <h1>API Health Dashboard</h1>
         <button className="theme-toggle" onClick={toggleTheme}>
@@ -51,31 +51,33 @@ function Dashboard() {
 
       <h2>Recent APIs</h2>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Method</th>
-            <th>Status</th>
-            <th>SLA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {apis.map((api) => (
-            <tr key={api._id}>
-              <td>{api.name}</td>
-              <td>{api.method}</td>
-              <td>
-                <span className={`status-badge ${api.currentHealthStatus.toLowerCase()}`}>
-                  {api.currentHealthStatus}
-                </span>
-              </td>
-              <td>{api.slaLatency} ms</td>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>SLA</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+          </thead>
+          <tbody>
+            {apis.map((api) => (
+              <tr key={api._id}>
+                <td>{api.name}</td>
+                <td>{api.method}</td>
+                <td>
+                  <span className={`status-badge ${api.currentHealthStatus.toLowerCase()}`}>
+                    {api.currentHealthStatus}
+                  </span>
+                </td>
+                <td>{api.slaLatency} ms</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

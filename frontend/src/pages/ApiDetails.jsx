@@ -39,156 +39,145 @@ function ApiDetails() {
   };
 
   if (!apiData) {
-    return <h2>Loading...</h2>;
+    return <h2 className="loading-state">Loading...</h2>;
   }
 
   return (
     <div className="details-container">
       <h1>API Details</h1>
 
-      <hr />
-
       <div className="info-card">
-  <h2>{apiData.name}</h2>
+        <h2>{apiData.name}</h2>
 
-  <p>
-    <strong>URL:</strong> {apiData.url}
-  </p>
+        <p>
+          <strong>URL:</strong> {apiData.url}
+        </p>
 
-  <p>
-    <strong>Method:</strong> {apiData.method}
-  </p>
+        <p>
+          <strong>Method:</strong> {apiData.method}
+        </p>
 
-  <p>
-    <strong>Status:</strong>
+        <p>
+          <strong>Status:</strong>{" "}
+          <span
+            className={`status ${apiData.currentHealthStatus}`}
+          >
+            {apiData.currentHealthStatus}
+          </span>
+        </p>
 
-    <span
-      className={`status ${apiData.currentHealthStatus}`}
-    >
-      {apiData.currentHealthStatus}
-    </span>
-  </p>
+        <p>
+          <strong>SLA:</strong> {apiData.slaLatency} ms
+        </p>
 
-  <p>
-    <strong>SLA:</strong> {apiData.slaLatency} ms
-  </p>
+        <p>
+          <strong>Active:</strong>{" "}
+          {apiData.isActive ? "Yes" : "No"}
+        </p>
 
-  <p>
-    <strong>Active:</strong>{" "}
-    {apiData.isActive ? "Yes" : "No"}
-  </p>
+        <p>
+          <strong>Degradation Reason:</strong>{" "}
+          {apiData.degradationReason || "None"}
+        </p>
+      </div>
 
-  <p>
-    <strong>Degradation Reason:</strong>{" "}
-    {apiData.degradationReason || "None"}
-  </p>
-</div>
+      <h2 className="section-title">Health History</h2>
 
-      <hr />
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Response Time</th>
+              <th>Failure Type</th>
+              <th>Time</th>
+            </tr>
+          </thead>
 
-      <h2>Health History</h2>
+          <tbody>
+            {history.slice(0, 10).map((item) => (
+              <tr key={item._id}>
+                <td>{item.healthStatus}</td>
+                <td>{item.responseTime}</td>
+                <td>{item.failureType}</td>
+                <td>
+                  {new Date(item.checkedAt).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <table border="1">
-  <thead>
-    <tr>
-      <th>Status</th>
-      <th>Response Time</th>
-      <th>Failure Type</th>
-      <th>Time</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {history.slice(0, 10).map((item) => (
-      <tr key={item._id}>
-        <td>{item.healthStatus}</td>
-        <td>{item.responseTime}</td>
-        <td>{item.failureType}</td>
-        <td>
-          {new Date(item.checkedAt).toLocaleString()}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-      <hr />
-
-      <h2>Retry Statistics</h2>
+      <h2 className="section-title">Retry Statistics</h2>
 
       {retryData && (
-        <>
-          <p>
-            Total Retries:
-            {" "}
-            {retryData.retryStats.totalRetries}
-          </p>
+        <div className="info-card stats-grid">
+          <div className="stat">
+            <span className="stat-label">Total Retries</span>
+            <span className="stat-value">{retryData.retryStats.totalRetries}</span>
+          </div>
 
-          <p>
-            Successful Retries:
-            {" "}
-            {retryData.retryStats.successfulRetries}
-          </p>
+          <div className="stat">
+            <span className="stat-label">Successful Retries</span>
+            <span className="stat-value">{retryData.retryStats.successfulRetries}</span>
+          </div>
 
-          <p>
-            Failed Retries:
-            {" "}
-            {retryData.retryStats.failedRetries}
-          </p>
+          <div className="stat">
+            <span className="stat-label">Failed Retries</span>
+            <span className="stat-value">{retryData.retryStats.failedRetries}</span>
+          </div>
 
-          <p>
-            Recovery Rate:
-            {" "}
-            {retryData.retryStats.recoveryRate}
-          </p>
-        </>
+          <div className="stat">
+            <span className="stat-label">Recovery Rate</span>
+            <span className="stat-value">{retryData.retryStats.recoveryRate}</span>
+          </div>
+        </div>
       )}
 
-      <hr />
+      <h2 className="section-title">Retry History</h2>
 
-      <h2>Retry History</h2>
+      <div className="retry-list">
+        {retryData?.retryDetails?.map((retry, index) => (
+          <div className="retry-row" key={index}>
+            <p>
+              Retry #{retry.retryAttempt}
+              {" | "}
+              {retry.healthStatus}
+              {" | "}
+              {retry.responseTime}
+            </p>
+          </div>
+        ))}
+      </div>
 
-      {retryData?.retryDetails?.map((retry, index) => (
-        <div key={index}>
+      <h2 className="section-title">Degradation Analysis</h2>
+
+      {degradation && (
+        <div className="info-card">
           <p>
-            Retry #{retry.retryAttempt}
-            {" | "}
-            {retry.healthStatus}
-            {" | "}
-            {retry.responseTime}
+            <strong>Degraded:</strong>{" "}
+            {degradation.isDegraded ? "Yes" : "No"}
+          </p>
+
+          <p>
+            <strong>Severity:</strong>{" "}
+            {degradation.severity}
+          </p>
+
+          <p>
+            <strong>Reason:</strong>{" "}
+            {degradation.reason}
+          </p>
+
+          <p>
+            <strong>Logs Analyzed:</strong>{" "}
+            {degradation.logsAnalyzed}
           </p>
         </div>
-      ))}
-
-      <hr />
-
-      <h2>Degradation Analysis</h2>
-
-{degradation && (
-  <div>
-    <p>
-      <strong>Degraded:</strong>{" "}
-      {degradation.isDegraded ? "Yes" : "No"}
-    </p>
-
-    <p>
-      <strong>Severity:</strong>{" "}
-      {degradation.severity}
-    </p>
-
-    <p>
-      <strong>Reason:</strong>{" "}
-      {degradation.reason}
-    </p>
-
-    <p>
-      <strong>Logs Analyzed:</strong>{" "}
-      {degradation.logsAnalyzed}
-    </p>
-  </div>
-)}
+      )}
     </div>
   );
 }
 
-export default ApiDetails;
+export default ApiDetails;//ApiDetails.jsx
