@@ -39,6 +39,7 @@ async function retryFailedApi(api, retryAttempt = 1) {
         apiId: api._id,
         statusCode: response.status,
         responseTime,
+        isSuccess: healthStatus !== "FAILED",
         healthStatus,
         failureType: "NONE",
         isRetry: true,
@@ -67,19 +68,20 @@ async function retryFailedApi(api, retryAttempt = 1) {
         : "SERVER_ERROR";
 
       await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: err.response?.status || 0,
-        responseTime,
-        healthStatus,
-        failureType,
-        isRetry: true,
-        retryAttempt,
-        checkedAt: new Date()
-      });
+          apiId: api._id,
+          statusCode: err.response?.status || 0,
+          responseTime,
+          isSuccess: false,
+          healthStatus,
+          failureType,
+          isRetry: true,
+          retryAttempt,
+          checkedAt: new Date()
+        });
 
       await ApiModel.findByIdAndUpdate(api._id, {
         currentHealthStatus: healthStatus,
-        degradationReason: healthStatus === "FAILED" ? "API FAILURE" : null
+        degradationReason:healthStatus === "FAILED" ? failureType : null
       });
 
       console.log(api.url, `→ Retry ${retryAttempt} FAILED`);

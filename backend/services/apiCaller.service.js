@@ -106,7 +106,9 @@ if (
         },
         api.slaLatency
       );
-      if (previousStatus !== healthStatus) {
+      const previousStatus = api.currentHealthStatus;
+
+if (previousStatus !== healthStatus) {
   await logEvent({
     apiId: api._id,
     fromStatus: previousStatus,
@@ -114,15 +116,15 @@ if (
     reason: "Health status changed during monitoring"
   });
 }
-
       await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: response.status,
-        responseTime,
-        healthStatus,
-        failureType: "NONE",
-        checkedAt: new Date()
-      });
+  apiId: api._id,
+  statusCode: response.status,
+  responseTime,
+  isSuccess: healthStatus !== "FAILED",
+  healthStatus,
+  failureType: "NONE",
+  checkedAt: new Date()
+});
 
       /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {
@@ -161,6 +163,7 @@ if (
         },
         api.slaLatency
       );
+      
 
       const failureType =
         err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
@@ -176,13 +179,14 @@ if (previousStatus !== healthStatus) {
 }
 
       await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: err.response?.status || 0,
-        responseTime,
-        healthStatus,
-        failureType,
-        checkedAt: new Date()
-      });
+  apiId: api._id,
+  statusCode: err.response?.status || 0,
+  responseTime,
+  isSuccess: false,
+  healthStatus,
+  failureType,
+  checkedAt: new Date()
+});
 
       /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {

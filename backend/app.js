@@ -8,6 +8,7 @@ const connectDB = require("./config/db");
 // Routes
 const authRoutes = require("./route/auth");
 const apiRoutes = require("./route/Api.routes");
+const analyticsRoutes = require("./route/analytics.routes");
 
 // Start cron jobs
 require("./cron/monitor.cron");
@@ -22,6 +23,7 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/apis", apiRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Example protected route
 // const protect = require("./middleware/auth");

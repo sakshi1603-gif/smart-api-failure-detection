@@ -77,7 +77,7 @@ export default function Background3D({ theme = "dark" }) {
         dpr={[1, 1.5]} // cap pixel ratio for performance
       >
         <ParticleField color={particleColor} />
-        <MouseParallax />
+      <MouseParallax />
       </Canvas>
     </div>
   );
