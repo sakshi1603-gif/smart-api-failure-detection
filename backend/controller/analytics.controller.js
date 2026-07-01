@@ -41,22 +41,22 @@ exports.getDashboardAnalytics = async (req, res) => {
           totalChecksToday: { $sum: 1 },
 
           totalFailuresToday: {
-              $sum: {
-                $cond: [{ $eq: ["$healthStatus", "FAILED"] }, 1, 0],
-              },
+            $sum: {
+              $cond: [{ $eq: ["$healthStatus", "FAILED"] }, 1, 0],
             },
-            
-            successfulChecks: {
-              $sum: {
-                $cond: [
-                  {
-                    $in: ["$healthStatus", ["HEALTHY", "SLOW"]],
-                  },
-                  1,
-                  0,
-                ],
-              },
+          },
+
+          successfulChecks: {
+            $sum: {
+              $cond: [
+                {
+                  $in: ["$healthStatus", ["HEALTHY", "SLOW"]],
+                },
+                1,
+                0,
+              ],
             },
+          },
         },
       },
     ]);
@@ -69,10 +69,7 @@ exports.getDashboardAnalytics = async (req, res) => {
 
     const successRate =
       stats.totalChecksToday > 0
-        ? (
-            (stats.successfulChecks / stats.totalChecksToday) *
-            100
-          ).toFixed(2)
+        ? ((stats.successfulChecks / stats.totalChecksToday) * 100).toFixed(2)
         : 0;
 
     return res.status(200).json({

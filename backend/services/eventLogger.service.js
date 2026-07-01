@@ -5,7 +5,7 @@ async function logEvent({ apiId, fromStatus, toStatus, reason }) {
     apiId,
     fromStatus,
     toStatus,
-    reason
+    reason,
   });
 }
 

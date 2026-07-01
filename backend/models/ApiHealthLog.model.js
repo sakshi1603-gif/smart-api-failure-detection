@@ -1,49 +1,48 @@
 const mongoose = require("mongoose");
 
-
 const apiHealthLogSchema = new mongoose.Schema({
   apiId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Api",
-    required: true
+    required: true,
   },
   statusCode: {
     type: Number,
-    required: true
+    required: true,
   },
   responseTime: {
     type: Number,
-    required: true
+    required: true,
   },
   isSuccess: {
     type: Boolean,
-    default: function() {
+    default: function () {
       return this.statusCode >= 200 && this.statusCode < 400; //Automatically set based on statusCode
-    }
+    },
   },
 
   healthStatus: {
     type: String,
     enum: ["FAILED", "SLOW", "HEALTHY"],
-    required: true
+    required: true,
   },
   failureType: {
     type: String,
     enum: ["NONE", "TIMEOUT", "SERVER_ERROR"],
-    default: "NONE"
+    default: "NONE",
   },
   retryAttempt: {
     type: Number,
-    default: 0
+    default: 0,
   },
   isRetry: {
     type: Boolean,
-    default: false
+    default: false,
   },
   checkedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 //Add indexes for efficient querying
@@ -53,7 +52,7 @@ apiHealthLogSchema.index({ failureType: 1 });
 
 apiHealthLogSchema.index(
   { checkedAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 }
+  { expireAfterSeconds: 60 * 60 * 24 * 30 },
 );
 const ApiHealthLog = mongoose.model("ApiHealthLog", apiHealthLogSchema);
 

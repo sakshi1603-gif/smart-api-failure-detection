@@ -6,107 +6,120 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* base surfaces */
-  --bg: #05050a;
-  --bg-soft: #0a0a12;
-  --panel: rgba(255, 255, 255, 0.035);
-  --panel-hover: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.18);
+    /* base surfaces */
+    --bg: #05050a;
+    --bg-soft: #0a0a12;
+    --panel: rgba(255, 255, 255, 0.035);
+    --panel-hover: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.18);
 
-  /* text */
-  --text: #e8e8f0;
-  --text-dim: #9494ac;
-  --text-faint: #67677e;
+    /* text */
+    --text: #e8e8f0;
+    --text-dim: #9494ac;
+    --text-faint: #67677e;
 
-  /* brand accent — red & charcoal */
-  --accent: #ff4d5e;
-  --accent-glow: rgba(255, 77, 94, 0.35);
-  --accent-soft: rgba(255, 77, 94, 0.12);
+    /* brand accent — red & charcoal */
+    --accent: #ff4d5e;
+    --accent-glow: rgba(255, 77, 94, 0.35);
+    --accent-soft: rgba(255, 77, 94, 0.12);
 
-  /* status colors */
-  --healthy: #3ddc84;
-  --healthy-bg: rgba(61, 220, 132, 0.13);
-  --failed: #ff5468;
-  --failed-bg: rgba(255, 84, 104, 0.13);
-  --blocked: #ffb648;
-  --blocked-bg: rgba(255, 182, 72, 0.13);
-  --degraded: #b09bff;
-  --degraded-bg: rgba(176, 155, 255, 0.13);
-  --slow: #ffd93d;
-  --slow-bg: rgba(255, 217, 61, 0.13);
+    /* status colors */
+    --healthy: #3ddc84;
+    --healthy-bg: rgba(61, 220, 132, 0.13);
+    --failed: #ff5468;
+    --failed-bg: rgba(255, 84, 104, 0.13);
+    --blocked: #ffb648;
+    --blocked-bg: rgba(255, 182, 72, 0.13);
+    --degraded: #b09bff;
+    --degraded-bg: rgba(176, 155, 255, 0.13);
+    --slow: #ffd93d;
+    --slow-bg: rgba(255, 217, 61, 0.13);
 
-  /* shape */
-  --radius-lg: 16px;
-  --radius: 12px;
-  --radius-sm: 8px;
+    /* shape */
+    --radius-lg: 16px;
+    --radius: 12px;
+    --radius-sm: 8px;
 
-  /* type */
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    /* type */
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* Light mode — assumes ThemeContext sets document.documentElement.dataset.theme = "light".
    If your ThemeContext toggles a class instead, tell me and I'll adjust the selector. */
 [data-theme="light"] {
-  --bg: #f3f2f7;
-  --bg-soft: #ffffff;
-  --panel: rgba(20, 20, 35, 0.035);
-  --panel-hover: rgba(20, 20, 35, 0.06);
-  --border: rgba(20, 20, 35, 0.09);
-  --border-strong: rgba(20, 20, 35, 0.18);
+    --bg: #f3f2f7;
+    --bg-soft: #ffffff;
+    --panel: rgba(20, 20, 35, 0.035);
+    --panel-hover: rgba(20, 20, 35, 0.06);
+    --border: rgba(20, 20, 35, 0.09);
+    --border-strong: rgba(20, 20, 35, 0.18);
 
-  --text: #17171f;
-  --text-dim: #55556b;
-  --text-faint: #8888a0;
+    --text: #17171f;
+    --text-dim: #55556b;
+    --text-faint: #8888a0;
 
-  --accent-soft: rgba(255, 77, 94, 0.08);
+    --accent-soft: rgba(255, 77, 94, 0.08);
 }
 
 /* shared glass panel used across cards / tables / toolbars */
 .glass-panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
 /* shared live status pill — dot + label, works for any status text */
 .status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .status-pill::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 0 currentColor;
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 0 currentColor;
 }
 
 .status-pill.pulse::before {
-  animation: pill-pulse 1.8s ease-out infinite;
+    animation: pill-pulse 1.8s ease-out infinite;
 }
 
 @keyframes pill-pulse {
-  0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
-  70%  { box-shadow: 0 0 0 6px transparent; opacity: 0.4; }
-  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+    0% {
+        box-shadow: 0 0 0 0 currentColor;
+        opacity: 1;
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px transparent;
+        opacity: 0.4;
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+        opacity: 1;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .status-pill.pulse::before { animation: none; }
+    .status-pill.pulse::before {
+        animation: none;
+    }
 }

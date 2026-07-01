@@ -1,31 +1,26 @@
 const Api = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const mongoose = require("mongoose");
-const{
+const {
   analyzeApiDegradation,
   analyzeAllApisDegradation,
-  updateApiStatusBasedOnDegradation
-}=require("../services/degradationAnalyzer.service");
+  updateApiStatusBasedOnDegradation,
+} = require("../services/degradationAnalyzer.service");
 //POST /apis
 exports.registerApi = async (req, res) => {
-    try {
-        const api = await Api.create(req.body);
-        res.status(201).json(api);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
+  try {
+    const api = await Api.create(req.body);
+    res.status(201).json(api);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 };
 
 //GET /apis
 //GET /apis
 exports.getApis = async (req, res) => {
   try {
-    let {
-      page = 1,
-      limit = 10,
-      search = "",
-      status = ""
-    } = req.query;
+    let { page = 1, limit = 10, search = "", status = "" } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -36,7 +31,7 @@ exports.getApis = async (req, res) => {
     if (search) {
       query.name = {
         $regex: search,
-        $options: "i"
+        $options: "i",
       };
     }
 
@@ -60,44 +55,45 @@ exports.getApis = async (req, res) => {
       totalPages: Math.ceil(totalApis / limit),
       hasNextPage: page < Math.ceil(totalApis / limit),
       hasPrevPage: page > 1,
-      apis
+      apis,
     });
-
   } catch (err) {
     console.error(err);
 
     res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };
 
 // Utility function to log health check results
 exports.logHealthCheck = async (apiId, result) => {
-    try {
-        const healthLog = await ApiHealthLog.create({
-            apiId,
-            statusCode: result.statusCode,
-            responseTime: result.responseTime,
-            healthStatus: result.healthStatus, // "HEALTHY", "SLOW", "FAILED"
-            failureType: result.failureType || "NONE",
-            checkedAt: new Date()
-        });
+  try {
+    const healthLog = await ApiHealthLog.create({
+      apiId,
+      statusCode: result.statusCode,
+      responseTime: result.responseTime,
+      healthStatus: result.healthStatus, // "HEALTHY", "SLOW", "FAILED"
+      failureType: result.failureType || "NONE",
+      checkedAt: new Date(),
+    });
 
-        // Update Api.currentHealthStatus based on result
-        await Api.findByIdAndUpdate(
-            apiId,
-            { currentHealthStatus: result.healthStatus,
-              degradationReason: result.healthStatus === "FAILED" ? "API FAILURE" : null
-            },
-            { new: true }
-        );
-        return healthLog;
-    } catch (error) {
-        console.error("Error logging health check:", error);
-        throw error;
-    }
+    // Update Api.currentHealthStatus based on result
+    await Api.findByIdAndUpdate(
+      apiId,
+      {
+        currentHealthStatus: result.healthStatus,
+        degradationReason:
+          result.healthStatus === "FAILED" ? "API FAILURE" : null,
+      },
+      { new: true },
+    );
+    return healthLog;
+  } catch (error) {
+    console.error("Error logging health check:", error);
+    throw error;
+  }
 };
 
 //GET /apis/:id/history
@@ -113,7 +109,7 @@ exports.getApiHistory = async (req, res) => {
       .sort({ checkedAt: -1 })
       .limit(100);
 
-    const enhancedHistory = history.map(log => ({
+    const enhancedHistory = history.map((log) => ({
       _id: log._id,
       healthStatus: log.healthStatus,
       statusCode: log.statusCode,
@@ -122,15 +118,13 @@ exports.getApiHistory = async (req, res) => {
       isRetry: log.isRetry,
       retryAttempt: log.retryAttempt,
       checkedAt: log.checkedAt,
-      label: log.isRetry
-        ? `Retry #${log.retryAttempt}`
-        : "Initial Check"
+      label: log.isRetry ? `Retry #${log.retryAttempt}` : "Initial Check",
     }));
 
     return res.status(200).json({
       apiId: id,
       count: history.length,
-      history: enhancedHistory
+      history: enhancedHistory,
     });
   } catch (err) {
     console.error("getApiHistoryEnhanced error:", err);
@@ -154,17 +148,21 @@ exports.getRetryHistory = async (req, res) => {
     }
 
     // Get all retry attempts
-    const retries = await ApiHealthLog.find({ 
+    const retries = await ApiHealthLog.find({
       apiId: id,
-      isRetry: true  // ✅ Only retry attempts
+      isRetry: true, // ✅ Only retry attempts
     })
       .sort({ checkedAt: -1 })
       .limit(50);
 
     // Stats
     const totalRetries = retries.length;
-    const successfulRetries = retries.filter(r => r.healthStatus === "HEALTHY").length;
-    const failedRetries = retries.filter(r => r.healthStatus === "FAILED").length;
+    const successfulRetries = retries.filter(
+      (r) => r.healthStatus === "HEALTHY",
+    ).length;
+    const failedRetries = retries.filter(
+      (r) => r.healthStatus === "FAILED",
+    ).length;
 
     return res.status(200).json({
       apiId: id,
@@ -174,18 +172,19 @@ exports.getRetryHistory = async (req, res) => {
         totalRetries,
         successfulRetries,
         failedRetries,
-        recoveryRate: totalRetries > 0 
-          ? ((successfulRetries / totalRetries) * 100).toFixed(2) + "%"
-          : "N/A"
+        recoveryRate:
+          totalRetries > 0
+            ? ((successfulRetries / totalRetries) * 100).toFixed(2) + "%"
+            : "N/A",
       },
-      retryDetails: retries.map(r => ({
+      retryDetails: retries.map((r) => ({
         retryAttempt: r.retryAttempt,
         healthStatus: r.healthStatus,
         statusCode: r.statusCode,
         responseTime: r.responseTime + "ms",
         failureType: r.failureType,
-        timestamp: r.checkedAt
-      }))
+        timestamp: r.checkedAt,
+      })),
     });
   } catch (err) {
     console.error("getRetryHistory error:", err);
@@ -207,7 +206,9 @@ exports.getApiDegradationStatus = async (req, res) => {
     return res.status(200).json(degradationStatus);
   } catch (err) {
     console.error("getApiDegradationStatus error:", err);
-    return res.status(500).json({ error: "Failed to fetch API degradation status" });
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch API degradation status" });
   }
 };
 
@@ -218,7 +219,9 @@ exports.getAllApisDegradationStatus = async (req, res) => {
     return res.status(200).json(degradationReport);
   } catch (err) {
     console.error("getAllApisDegradationStatus error:", err);
-    return res.status(500).json({ error: "Failed to fetch APIs degradation status" });
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch APIs degradation status" });
   }
 };
 
@@ -230,10 +233,14 @@ exports.updateApiDegradationStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid API ID" });
     }
     await updateApiStatusBasedOnDegradation(id);
-    return res.status(200).json({ message: "API degradation status updated successfully" });
+    return res
+      .status(200)
+      .json({ message: "API degradation status updated successfully" });
   } catch (err) {
     console.error("updateApiDegradationStatus error:", err);
-    return res.status(500).json({ error: "Failed to update API degradation status" });
+    return res
+      .status(500)
+      .json({ error: "Failed to update API degradation status" });
   }
 };
 
@@ -242,13 +249,13 @@ exports.getBlockedApis = async (req, res) => {
   try {
     const blockedApis = await Api.find({
       currentHealthStatus: "BLOCKED",
-      blockedUntil: { $gt: new Date() }
+      blockedUntil: { $gt: new Date() },
     }).select("name url blockedUntil degradationReason");
 
     return res.status(200).json({
       count: blockedApis.length,
       blockedApis,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   } catch (err) {
     console.error("getBlockedApis error:", err);
@@ -263,31 +270,26 @@ exports.getApiById = async (req, res) => {
 
     if (!api) {
       return res.status(404).json({
-        error: "API not found"
+        error: "API not found",
       });
     }
 
     res.status(200).json(api);
-
   } catch (err) {
-
     res.status(500).json({
-      error: err.message
+      error: err.message,
     });
-
   }
 };
 
 //GET /apis/:id/uptime
 exports.getApiUptime = async (req, res) => {
-
   try {
-
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: "Invalid API ID"
+        error: "Invalid API ID",
       });
     }
 
@@ -295,35 +297,32 @@ exports.getApiUptime = async (req, res) => {
 
     if (!api) {
       return res.status(404).json({
-        error: "API not found"
+        error: "API not found",
       });
     }
 
     async function calculateUptime(days) {
-
-      const fromDate = new Date(
-        Date.now() - days * 24 * 60 * 60 * 1000
-      );
+      const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
       const logs = await ApiHealthLog.find({
         apiId: id,
         checkedAt: {
-          $gte: fromDate
-        }
+          $gte: fromDate,
+        },
       });
 
       const totalChecks = logs.length;
 
       const healthyChecks = logs.filter(
-        log => log.healthStatus === "HEALTHY"
+        (log) => log.healthStatus === "HEALTHY",
       ).length;
 
       const failedChecks = logs.filter(
-        log => log.healthStatus === "FAILED"
+        (log) => log.healthStatus === "FAILED",
       ).length;
 
       const slowChecks = logs.filter(
-        log => log.healthStatus === "SLOW"
+        (log) => log.healthStatus === "SLOW",
       ).length;
 
       const uptime =
@@ -336,9 +335,8 @@ exports.getApiUptime = async (req, res) => {
         totalChecks,
         healthyChecks,
         failedChecks,
-        slowChecks
+        slowChecks,
       };
-
     }
 
     const last24Hours = await calculateUptime(1);
@@ -350,17 +348,13 @@ exports.getApiUptime = async (req, res) => {
       apiName: api.name,
       last24Hours,
       last7Days,
-      last30Days
+      last30Days,
     });
-
   } catch (err) {
-
     console.error(err);
 
     res.status(500).json({
-      error: err.message
+      error: err.message,
     });
-
   }
-
 };

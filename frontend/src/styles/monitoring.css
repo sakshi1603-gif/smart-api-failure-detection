@@ -100,7 +100,9 @@
   border-bottom: 1px solid var(--border);
 }
 
-.monitoring-page tbody tr:last-child td { border-bottom: none; }
+.monitoring-page tbody tr:last-child td {
+  border-bottom: none;
+}
 
 .monitoring-page tbody tr {
   transition: background 0.15s ease;
@@ -135,19 +137,43 @@
   color: var(--healthy);
   background: var(--healthy-bg);
 }
+
 .monitoring-page .status.HEALTHY::before {
   animation: pill-pulse 1.8s ease-out infinite;
 }
 
-.monitoring-page .status.FAILED   { color: var(--failed);   background: var(--failed-bg); }
-.monitoring-page .status.BLOCKED  { color: var(--blocked);  background: var(--blocked-bg); }
-.monitoring-page .status.DEGRADED { color: var(--degraded); background: var(--degraded-bg); }
-.monitoring-page .status.SLOW     { color: var(--slow);     background: var(--slow-bg); }
+.monitoring-page .status.FAILED {
+  color: var(--failed);
+  background: var(--failed-bg);
+}
+
+.monitoring-page .status.BLOCKED {
+  color: var(--blocked);
+  background: var(--blocked-bg);
+}
+
+.monitoring-page .status.DEGRADED {
+  color: var(--degraded);
+  background: var(--degraded-bg);
+}
+
+.monitoring-page .status.SLOW {
+  color: var(--slow);
+  background: var(--slow-bg);
+}
 
 @keyframes pill-pulse {
-  0%   { box-shadow: 0 0 0 0 currentColor; }
-  70%  { box-shadow: 0 0 0 6px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 /* ---------- view link ---------- */
@@ -206,9 +232,20 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 600px) {
-  .monitoring-toolbar { flex-direction: column; }
+  .monitoring-toolbar {
+    flex-direction: column;
+  }
+
   .monitoring-toolbar input,
-  .monitoring-toolbar select { width: 100%; }
-  .monitoring-page h1 { font-size: 1.5rem; }
-  .monitoring-page { padding: 32px 16px 60px; }
+  .monitoring-toolbar select {
+    width: 100%;
+  }
+
+  .monitoring-page h1 {
+    font-size: 1.5rem;
+  }
+
+  .monitoring-page {
+    padding: 32px 16px 60px;
+  }
 }

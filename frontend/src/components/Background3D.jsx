@@ -1,11 +1,15 @@
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three";
 
 /**
  * Generates a cloud of points scattered randomly inside a cube of `spread` size.
  */
-function ParticleField({ count = 1800, spread = 18, color = "#a8b8ff", size = 0.035 }) {
+function ParticleField({
+  count = 1800,
+  spread = 18,
+  color = "#a8b8ff",
+  size = 0.035,
+}) {
   const pointsRef = useRef();
 
   // Build the random positions once
@@ -77,7 +81,7 @@ export default function Background3D({ theme = "dark" }) {
         dpr={[1, 1.5]} // cap pixel ratio for performance
       >
         <ParticleField color={particleColor} />
-      <MouseParallax />
+        <MouseParallax />
       </Canvas>
     </div>
   );

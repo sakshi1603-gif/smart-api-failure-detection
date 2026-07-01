@@ -82,19 +82,43 @@
   color: var(--healthy);
   background: var(--healthy-bg);
 }
+
 .status.HEALTHY::before {
   animation: pill-pulse 1.8s ease-out infinite;
 }
 
-.status.FAILED   { color: var(--failed);   background: var(--failed-bg); }
-.status.BLOCKED  { color: var(--blocked);  background: var(--blocked-bg); }
-.status.DEGRADED { color: var(--degraded); background: var(--degraded-bg); }
-.status.SLOW     { color: var(--slow);     background: var(--slow-bg); }
+.status.FAILED {
+  color: var(--failed);
+  background: var(--failed-bg);
+}
+
+.status.BLOCKED {
+  color: var(--blocked);
+  background: var(--blocked-bg);
+}
+
+.status.DEGRADED {
+  color: var(--degraded);
+  background: var(--degraded-bg);
+}
+
+.status.SLOW {
+  color: var(--slow);
+  background: var(--slow-bg);
+}
 
 @keyframes pill-pulse {
-  0%   { box-shadow: 0 0 0 0 currentColor; }
-  70%  { box-shadow: 0 0 0 6px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 /* ---------- section titles ---------- */
@@ -146,7 +170,9 @@
   border-bottom: 1px solid var(--border);
 }
 
-.details-container tbody tr:last-child td { border-bottom: none; }
+.details-container tbody tr:last-child td {
+  border-bottom: none;
+}
 
 .details-container tbody tr:hover {
   background: var(--panel-hover);
@@ -211,12 +237,25 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 700px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .details-container h1 { font-size: 1.5rem; }
-  .details-container { padding: 32px 16px 60px; }
-  .info-card { padding: 20px; }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .details-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .details-container {
+    padding: 32px 16px 60px;
+  }
+
+  .info-card {
+    padding: 20px;
+  }
 }

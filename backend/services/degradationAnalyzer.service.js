@@ -32,12 +32,12 @@ function hasConsecutiveFailures(logs, threshold = 3) {
 
 function isFrequentlySlow(logs, slowLimit = 4) {
   if (!logs || logs.length === 0) return false;
-  return logs.filter(log => log.healthStatus === "SLOW").length >= slowLimit;
+  return logs.filter((log) => log.healthStatus === "SLOW").length >= slowLimit;
 }
 
 function hasHighErrorRate(logs, threshold = 0.5) {
   if (!logs || logs.length === 0) return false;
-  const errorCount = logs.filter(log => log.healthStatus === "FAILED").length;
+  const errorCount = logs.filter((log) => log.healthStatus === "FAILED").length;
   return errorCount / logs.length >= threshold;
 }
 
@@ -50,7 +50,7 @@ function decideDegradation(logs) {
     return {
       isDegraded: true,
       reason: "3 consecutive failures detected",
-      severity: "CRITICAL"
+      severity: "CRITICAL",
     };
   }
 
@@ -58,7 +58,7 @@ function decideDegradation(logs) {
     return {
       isDegraded: true,
       reason: "High error rate detected",
-      severity: "HIGH"
+      severity: "HIGH",
     };
   }
 
@@ -66,7 +66,7 @@ function decideDegradation(logs) {
     return {
       isDegraded: true,
       reason: "API frequently slow",
-      severity: "MEDIUM"
+      severity: "MEDIUM",
     };
   }
 
@@ -89,7 +89,7 @@ async function analyzeApiDegradation(apiId) {
     apiUrl: api.url,
     currentHealthStatus: api.currentHealthStatus,
     ...degradation,
-    logsAnalyzed: logs.length
+    logsAnalyzed: logs.length,
   };
 }
 
@@ -100,15 +100,15 @@ async function analyzeAllApisDegradation() {
   const apis = await Api.find({ isActive: true });
 
   const report = await Promise.all(
-    apis.map(api => analyzeApiDegradation(api._id))
+    apis.map((api) => analyzeApiDegradation(api._id)),
   );
 
   return {
     timestamp: new Date(),
     totalApisAnalyzed: apis.length,
-    degradedCount: report.filter(r => r.isDegraded).length,
-    healthyCount: report.filter(r => !r.isDegraded).length,
-    allApis: report
+    degradedCount: report.filter((r) => r.isDegraded).length,
+    healthyCount: report.filter((r) => !r.isDegraded).length,
+    allApis: report,
   };
 }
 
@@ -128,13 +128,13 @@ async function updateApiStatusBasedOnDegradation(apiId) {
       const BLOCK_COOLDOWN_MINUTES = 5;
 
       const blockedUntil = new Date(
-        Date.now() + BLOCK_COOLDOWN_MINUTES * 60 * 1000
+        Date.now() + BLOCK_COOLDOWN_MINUTES * 60 * 1000,
       );
 
       await Api.findByIdAndUpdate(apiId, {
         currentHealthStatus: "BLOCKED",
         blockedUntil,
-        degradationReason: "3 consecutive failures. API temporarily blocked."
+        degradationReason: "3 consecutive failures. API temporarily blocked.",
       });
 
       // ✅ DAY 11 EVENT LOG (WHY visible)
@@ -143,7 +143,7 @@ async function updateApiStatusBasedOnDegradation(apiId) {
           apiId,
           fromStatus: previousStatus,
           toStatus: "BLOCKED",
-          reason: "API blocked due to 3 consecutive failures"
+          reason: "API blocked due to 3 consecutive failures",
         });
       }
 
@@ -157,7 +157,7 @@ async function updateApiStatusBasedOnDegradation(apiId) {
       await Api.findByIdAndUpdate(apiId, {
         currentHealthStatus: "DEGRADED",
         degradationReason: degradation.reason,
-        blockedUntil: null
+        blockedUntil: null,
       });
 
       return { status: "DEGRADED" };
@@ -167,11 +167,10 @@ async function updateApiStatusBasedOnDegradation(apiId) {
     await Api.findByIdAndUpdate(apiId, {
       currentHealthStatus: "HEALTHY",
       degradationReason: null,
-      blockedUntil: null
+      blockedUntil: null,
     });
 
     return { status: "HEALTHY" };
-
   } catch (err) {
     console.error("Error in updateApiStatusBasedOnDegradation:", err);
     throw err;
@@ -186,5 +185,5 @@ module.exports = {
   decideDegradation,
   analyzeApiDegradation,
   analyzeAllApisDegradation,
-  updateApiStatusBasedOnDegradation
+  updateApiStatusBasedOnDegradation,
 };

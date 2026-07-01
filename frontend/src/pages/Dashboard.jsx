@@ -17,9 +17,15 @@ function Dashboard() {
   };
 
   const totalApis = apis.length;
-  const healthyApis = apis.filter((a) => a.currentHealthStatus === "HEALTHY").length;
-  const failedApis = apis.filter((a) => a.currentHealthStatus === "FAILED").length;
-  const blockedApis = apis.filter((a) => a.currentHealthStatus === "BLOCKED").length;
+  const healthyApis = apis.filter(
+    (a) => a.currentHealthStatus === "HEALTHY",
+  ).length;
+  const failedApis = apis.filter(
+    (a) => a.currentHealthStatus === "FAILED",
+  ).length;
+  const blockedApis = apis.filter(
+    (a) => a.currentHealthStatus === "BLOCKED",
+  ).length;
 
   return (
     <div className="dashboard-page">
@@ -67,7 +73,9 @@ function Dashboard() {
                 <td>{api.name}</td>
                 <td>{api.method}</td>
                 <td>
-                  <span className={`status-badge ${api.currentHealthStatus.toLowerCase()}`}>
+                  <span
+                    className={`status-badge ${api.currentHealthStatus.toLowerCase()}`}
+                  >
                     {api.currentHealthStatus}
                   </span>
                 </td>

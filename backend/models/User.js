@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String, required: true, minlength: 6 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Hash password before saving, only if it changed

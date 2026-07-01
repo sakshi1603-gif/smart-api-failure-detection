@@ -16,7 +16,10 @@ router.get("/status/blocked", ApiController.getBlockedApis);
 //degradation analysis routes
 router.get("/:id/degradation", ApiController.getApiDegradationStatus);
 router.get("/degradation/all", ApiController.getAllApisDegradationStatus);
-router.post("/:id/degradation/update", ApiController.updateApiDegradationStatus);
+router.post(
+  "/:id/degradation/update",
+  ApiController.updateApiDegradationStatus,
+);
 
 router.get("/:id/uptime", ApiController.getApiUptime);
 router.get("/:id", ApiController.getApiById);

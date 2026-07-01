@@ -72,14 +72,32 @@
   animation: card-rise 0.6s ease forwards;
 }
 
-.dashboard-cards .card:nth-child(1) { animation-delay: 0.02s; }
-.dashboard-cards .card:nth-child(2) { animation-delay: 0.08s; }
-.dashboard-cards .card:nth-child(3) { animation-delay: 0.14s; }
-.dashboard-cards .card:nth-child(4) { animation-delay: 0.2s; }
+.dashboard-cards .card:nth-child(1) {
+  animation-delay: 0.02s;
+}
+
+.dashboard-cards .card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.dashboard-cards .card:nth-child(3) {
+  animation-delay: 0.14s;
+}
+
+.dashboard-cards .card:nth-child(4) {
+  animation-delay: 0.2s;
+}
 
 @keyframes card-rise {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dashboard-cards .card:hover {
@@ -90,15 +108,28 @@
 .dashboard-cards .card::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background: var(--text-faint);
   opacity: 0.5;
 }
 
-.dashboard-cards .card.healthy::before { background: var(--healthy); box-shadow: 0 0 12px var(--healthy); }
-.dashboard-cards .card.failed::before  { background: var(--failed);  box-shadow: 0 0 12px var(--failed); }
-.dashboard-cards .card.blocked::before { background: var(--blocked); box-shadow: 0 0 12px var(--blocked); }
+.dashboard-cards .card.healthy::before {
+  background: var(--healthy);
+  box-shadow: 0 0 12px var(--healthy);
+}
+
+.dashboard-cards .card.failed::before {
+  background: var(--failed);
+  box-shadow: 0 0 12px var(--failed);
+}
+
+.dashboard-cards .card.blocked::before {
+  background: var(--blocked);
+  box-shadow: 0 0 12px var(--blocked);
+}
 
 .dashboard-cards .card h3 {
   font-family: var(--font-mono);
@@ -117,9 +148,17 @@
   color: var(--text);
 }
 
-.dashboard-cards .card.healthy p { color: var(--healthy); }
-.dashboard-cards .card.failed p  { color: var(--failed); }
-.dashboard-cards .card.blocked p { color: var(--blocked); }
+.dashboard-cards .card.healthy p {
+  color: var(--healthy);
+}
+
+.dashboard-cards .card.failed p {
+  color: var(--failed);
+}
+
+.dashboard-cards .card.blocked p {
+  color: var(--blocked);
+}
 
 /* ---------- section title ---------- */
 .dashboard-page h2 {
@@ -170,7 +209,9 @@
   border-bottom: 1px solid var(--border);
 }
 
-.dashboard-page tbody tr:last-child td { border-bottom: none; }
+.dashboard-page tbody tr:last-child td {
+  border-bottom: none;
+}
 
 .dashboard-page tbody tr {
   transition: background 0.15s ease;
@@ -206,33 +247,71 @@
   color: var(--healthy);
   background: var(--healthy-bg);
 }
+
 .status-badge.healthy::before {
   animation: pill-pulse 1.8s ease-out infinite;
 }
 
-.status-badge.failed  { color: var(--failed);   background: var(--failed-bg); }
-.status-badge.blocked { color: var(--blocked);  background: var(--blocked-bg); }
-.status-badge.degraded{ color: var(--degraded); background: var(--degraded-bg); }
-.status-badge.slow    { color: var(--slow);     background: var(--slow-bg); }
+.status-badge.failed {
+  color: var(--failed);
+  background: var(--failed-bg);
+}
+
+.status-badge.blocked {
+  color: var(--blocked);
+  background: var(--blocked-bg);
+}
+
+.status-badge.degraded {
+  color: var(--degraded);
+  background: var(--degraded-bg);
+}
+
+.status-badge.slow {
+  color: var(--slow);
+  background: var(--slow-bg);
+}
 
 @keyframes pill-pulse {
-  0%   { box-shadow: 0 0 0 0 currentColor; }
-  70%  { box-shadow: 0 0 0 6px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .status-badge.healthy::before,
-  .dashboard-cards .card { animation: none; opacity: 1; }
+  .dashboard-cards .card {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
-  .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 520px) {
-  .dashboard-cards { grid-template-columns: 1fr; }
-  .dashboard-header h1 { font-size: 1.5rem; }
-  .dashboard-page { padding: 32px 16px 60px; }
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-page {
+    padding: 32px 16px 60px;
+  }
 }

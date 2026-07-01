@@ -6,86 +6,71 @@ import "../styles/monitoring.css";
 function ApiMonitoring() {
   const [apis, setApis] = useState([]);
 
-const [search, setSearch] = useState("");
-const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
 
-const [page, setPage] = useState(1);
-const [limit] = useState(5);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
 
-const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchApis();
-}, [page, search, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, status]);
 
   const fetchApis = async () => {
-
     try {
+      const res = await api.get("/", {
+        params: {
+          page,
+          limit,
+          search,
+          status,
+        },
+      });
 
-        const res = await api.get("/", {
-
-            params: {
-                page,
-                limit,
-                search,
-                status
-            }
-
-        });
-
-        setApis(res.data.apis);
-        setTotalPages(res.data.totalPages);
-
+      setApis(res.data.apis);
+      setTotalPages(res.data.totalPages);
     } catch (err) {
-
-        console.log(err);
-
+      console.log(err);
     }
-
-};
+  };
 
   return (
     <div className="monitoring-page">
       <h1>API Monitoring</h1>
       <div className="monitoring-toolbar">
-
-    <input
-        type="text"
-        placeholder="Search API..."
-        value={search}
-        onChange={(e)=>{
-
+        <input
+          type="text"
+          placeholder="Search API..."
+          value={search}
+          onChange={(e) => {
             setPage(1);
             setSearch(e.target.value);
+          }}
+        />
 
-        }}
-    />
-
-    <select
-        value={status}
-        onChange={(e)=>{
-
+        <select
+          value={status}
+          onChange={(e) => {
             setPage(1);
             setStatus(e.target.value);
+          }}
+        >
+          <option value="">All Status</option>
 
-        }}
-    >
+          <option value="HEALTHY">Healthy</option>
 
-        <option value="">All Status</option>
+          <option value="FAILED">Failed</option>
 
-        <option value="HEALTHY">Healthy</option>
+          <option value="SLOW">Slow</option>
 
-        <option value="FAILED">Failed</option>
+          <option value="BLOCKED">Blocked</option>
 
-        <option value="SLOW">Slow</option>
-
-        <option value="BLOCKED">Blocked</option>
-
-        <option value="DEGRADED">Degraded</option>
-
-    </select>
-
-</div>
+          <option value="DEGRADED">Degraded</option>
+        </select>
+      </div>
 
       <div className="table-wrapper">
         <table>
@@ -107,9 +92,7 @@ const [totalPages, setTotalPages] = useState(1);
                 <td>{apiItem.method}</td>
 
                 <td>
-                  <span
-                    className={`status ${apiItem.currentHealthStatus}`}
-                  >
+                  <span className={`status ${apiItem.currentHealthStatus}`}>
                     {apiItem.currentHealthStatus}
                   </span>
                 </td>
@@ -127,34 +110,22 @@ const [totalPages, setTotalPages] = useState(1);
         </table>
       </div>
       <div className="pagination">
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          Previous
+        </button>
 
-    <button
-        disabled={page===1}
-        onClick={()=>setPage(page-1)}
-    >
+        <span>
+          Page {page} of {totalPages}
+        </span>
 
-        Previous
-
-    </button>
-
-    <span>
-
-        Page {page} of {totalPages}
-
-    </span>
-
-    <button
-        disabled={page===totalPages}
-        onClick={()=>setPage(page+1)}
-    >
-
-        Next
-
-    </button>
-
-</div>
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
     </div>
-    
   );
 }
 

@@ -7,7 +7,7 @@ async function updateRecoveryStatus({
   apiId,
   healthStatus,
   responseTime,
-  statusCode
+  statusCode,
 }) {
   const api = await ApiModel.findById(apiId);
 
@@ -36,7 +36,7 @@ async function updateRecoveryStatus({
     isSuccess: healthStatus !== "FAILED",
     healthStatus,
     failureType: healthStatus === "FAILED" ? "SERVER_ERROR" : "NONE",
-    checkedAt: new Date()
+    checkedAt: new Date(),
   });
 }
 

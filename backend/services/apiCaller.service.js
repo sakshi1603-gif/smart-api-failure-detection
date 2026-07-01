@@ -3,11 +3,11 @@ const ApiModel = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const { detectHealthStatus } = require("./failureDetector.service");
 const { retryFailedApi } = require("./retry.service");
-const {updateApiStatusBasedOnDegradation} = require("./degradationAnalyzer.service");
+const {
+  updateApiStatusBasedOnDegradation,
+} = require("./degradationAnalyzer.service");
 const { updateRecoveryStatus } = require("./recoveryStatusUpdater.service");
 const { logEvent } = require("./eventLogger.service");
-
-
 
 const TIMEOUT = 5000;
 
@@ -15,7 +15,7 @@ async function monitorAllAPIs() {
   const apis = await ApiModel.find();
 
   console.log(
-    `\n📊 [${new Date().toLocaleTimeString()}] Monitoring ${apis.length} APIs...\n`
+    `\n📊 [${new Date().toLocaleTimeString()}] Monitoring ${apis.length} APIs...\n`,
   );
 
   let successCount = 0;
@@ -23,7 +23,6 @@ async function monitorAllAPIs() {
   let slowCount = 0;
 
   for (const api of apis) {
-
     /* =======================
        🚫 SKIP BLOCKED APIs
     ======================== */
@@ -32,60 +31,55 @@ async function monitorAllAPIs() {
       api.blockedUntil &&
       new Date() < api.blockedUntil
     ) {
-      console.log(
-        `🚫 Skipping ${api.url} (BLOCKED until ${api.blockedUntil})`
-      );
+      console.log(`🚫 Skipping ${api.url} (BLOCKED until ${api.blockedUntil})`);
       continue;
     }
 
     /* =======================
        ✅ AUTO-UNBLOCK
     ======================== */
-if (
-  api.currentHealthStatus === "BLOCKED" &&
-  api.blockedUntil &&
-  new Date() >= api.blockedUntil
-) {
-  const start = Date.now();
+    if (
+      api.currentHealthStatus === "BLOCKED" &&
+      api.blockedUntil &&
+      new Date() >= api.blockedUntil
+    ) {
+      const start = Date.now();
 
-  try {
-    const response = await axios({
-      method: api.method,
-      url: api.url,
-      timeout: TIMEOUT
-    });
+      try {
+        const response = await axios({
+          method: api.method,
+          url: api.url,
+          timeout: TIMEOUT,
+        });
 
-    const responseTime = Date.now() - start;
+        const responseTime = Date.now() - start;
 
-    const healthStatus = detectHealthStatus(
-      {
-        statusCode: response.status,
-        timedOut: false,
-        responseTime
-      },
-      api.slaLatency
-    );
+        const healthStatus = detectHealthStatus(
+          {
+            statusCode: response.status,
+            timedOut: false,
+            responseTime,
+          },
+          api.slaLatency,
+        );
 
-    await updateRecoveryStatus({
-      apiId: api._id,
-      healthStatus,
-      responseTime,
-      statusCode: response.status
-    });
+        await updateRecoveryStatus({
+          apiId: api._id,
+          healthStatus,
+          responseTime,
+          statusCode: response.status,
+        });
+      } catch (err) {
+        await updateRecoveryStatus({
+          apiId: api._id,
+          healthStatus: "FAILED",
+          responseTime: TIMEOUT,
+          statusCode: 0,
+        });
+      }
 
-  } catch (err) {
-    await updateRecoveryStatus({
-      apiId: api._id,
-      healthStatus: "FAILED",
-      responseTime: TIMEOUT,
-      statusCode: 0
-    });
-  }
-
-  continue; // 🔒 only ONE test request
-}
-
-
+      continue; // 🔒 only ONE test request
+    }
 
     const start = Date.now();
 
@@ -93,7 +87,7 @@ if (
       const response = await axios({
         method: api.method,
         url: api.url,
-        timeout: TIMEOUT
+        timeout: TIMEOUT,
       });
 
       const responseTime = Date.now() - start;
@@ -102,56 +96,51 @@ if (
         {
           statusCode: response.status,
           timedOut: false,
-          responseTime
+          responseTime,
         },
-        api.slaLatency
+        api.slaLatency,
       );
       const previousStatus = api.currentHealthStatus;
 
-if (previousStatus !== healthStatus) {
-  await logEvent({
-    apiId: api._id,
-    fromStatus: previousStatus,
-    toStatus: healthStatus,
-    reason: "Health status changed during monitoring"
-  });
-}
+      if (previousStatus !== healthStatus) {
+        await logEvent({
+          apiId: api._id,
+          fromStatus: previousStatus,
+          toStatus: healthStatus,
+          reason: "Health status changed during monitoring",
+        });
+      }
       await ApiHealthLog.create({
-  apiId: api._id,
-  statusCode: response.status,
-  responseTime,
-  isSuccess: healthStatus !== "FAILED",
-  healthStatus,
-  failureType: "NONE",
-  checkedAt: new Date()
-});
+        apiId: api._id,
+        statusCode: response.status,
+        responseTime,
+        isSuccess: healthStatus !== "FAILED",
+        healthStatus,
+        failureType: "NONE",
+        checkedAt: new Date(),
+      });
 
       /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {
         await ApiModel.findByIdAndUpdate(api._id, {
           currentHealthStatus: healthStatus,
-          degradationReason: null
+          degradationReason: null,
         });
       }
 
       if (healthStatus === "FAILED") {
-        retryFailedApi(api).catch(err =>
-          console.error(`Retry error for ${api.url}:`, err.message)
+        retryFailedApi(api).catch((err) =>
+          console.error(`Retry error for ${api.url}:`, err.message),
         );
       }
 
       if (healthStatus === "SLOW") {
         slowCount++;
-        console.log(
-          `⚠️  SLOW   | ${api.name.padEnd(20)} | ${responseTime}ms`
-        );
+        console.log(`⚠️  SLOW   | ${api.name.padEnd(20)} | ${responseTime}ms`);
       } else if (healthStatus === "HEALTHY") {
         successCount++;
-        console.log(
-          `✅ HEALTHY | ${api.name.padEnd(20)} | ${responseTime}ms`
-        );
+        console.log(`✅ HEALTHY | ${api.name.padEnd(20)} | ${responseTime}ms`);
       }
-
     } catch (err) {
       const responseTime = Date.now() - start;
 
@@ -159,52 +148,51 @@ if (previousStatus !== healthStatus) {
         {
           statusCode: err.response?.status || 0,
           timedOut: err.code === "ECONNABORTED",
-          responseTime
+          responseTime,
         },
-        api.slaLatency
+        api.slaLatency,
       );
-      
 
       const failureType =
         err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
       const previousStatus = api.currentHealthStatus;
 
-if (previousStatus !== healthStatus) {
-  await logEvent({
-    apiId: api._id,
-    fromStatus: previousStatus,
-    toStatus: healthStatus,
-    reason: failureType
-  });
-}
+      if (previousStatus !== healthStatus) {
+        await logEvent({
+          apiId: api._id,
+          fromStatus: previousStatus,
+          toStatus: healthStatus,
+          reason: failureType,
+        });
+      }
 
       await ApiHealthLog.create({
-  apiId: api._id,
-  statusCode: err.response?.status || 0,
-  responseTime,
-  isSuccess: false,
-  healthStatus,
-  failureType,
-  checkedAt: new Date()
-});
+        apiId: api._id,
+        statusCode: err.response?.status || 0,
+        responseTime,
+        isSuccess: false,
+        healthStatus,
+        failureType,
+        checkedAt: new Date(),
+      });
 
       /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {
         await ApiModel.findByIdAndUpdate(api._id, {
           currentHealthStatus: healthStatus,
-          degradationReason: failureType
+          degradationReason: failureType,
         });
       }
 
       if (healthStatus === "FAILED") {
-        retryFailedApi(api).catch(err =>
-          console.error(`Retry error for ${api.url}:`, err.message)
+        retryFailedApi(api).catch((err) =>
+          console.error(`Retry error for ${api.url}:`, err.message),
         );
       }
 
       failureCount++;
       console.log(
-        `❌ FAILED  | ${api.name.padEnd(20)} | ${responseTime}ms | ${failureType}`
+        `❌ FAILED  | ${api.name.padEnd(20)} | ${responseTime}ms | ${failureType}`,
       );
     }
   }
@@ -225,10 +213,7 @@ if (previousStatus !== healthStatus) {
     try {
       await updateApiStatusBasedOnDegradation(api._id);
     } catch (err) {
-      console.error(
-        `Degradation analysis error for ${api.url}:`,
-        err.message
-      );
+      console.error(`Degradation analysis error for ${api.url}:`, err.message);
     }
   }
 }

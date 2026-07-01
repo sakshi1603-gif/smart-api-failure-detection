@@ -13,20 +13,16 @@ function ApiDetails() {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const fetchAllData = async () => {
     try {
-      const [
-        apiRes,
-        historyRes,
-        retryRes,
-        degradationRes,
-      ] = await Promise.all([
+      const [apiRes, historyRes, retryRes, degradationRes] = await Promise.all([
         api.get(`/${id}`),
         api.get(`/${id}/history`),
         api.get(`/${id}/retry-history`),
-        api.get(`/${id}/degradation`)
+        api.get(`/${id}/degradation`),
       ]);
 
       setApiData(apiRes.data);
@@ -59,9 +55,7 @@ function ApiDetails() {
 
         <p>
           <strong>Status:</strong>{" "}
-          <span
-            className={`status ${apiData.currentHealthStatus}`}
-          >
+          <span className={`status ${apiData.currentHealthStatus}`}>
             {apiData.currentHealthStatus}
           </span>
         </p>
@@ -71,8 +65,7 @@ function ApiDetails() {
         </p>
 
         <p>
-          <strong>Active:</strong>{" "}
-          {apiData.isActive ? "Yes" : "No"}
+          <strong>Active:</strong> {apiData.isActive ? "Yes" : "No"}
         </p>
 
         <p>
@@ -100,9 +93,7 @@ function ApiDetails() {
                 <td>{item.healthStatus}</td>
                 <td>{item.responseTime}</td>
                 <td>{item.failureType}</td>
-                <td>
-                  {new Date(item.checkedAt).toLocaleString()}
-                </td>
+                <td>{new Date(item.checkedAt).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -115,22 +106,30 @@ function ApiDetails() {
         <div className="info-card stats-grid">
           <div className="stat">
             <span className="stat-label">Total Retries</span>
-            <span className="stat-value">{retryData.retryStats.totalRetries}</span>
+            <span className="stat-value">
+              {retryData.retryStats.totalRetries}
+            </span>
           </div>
 
           <div className="stat">
             <span className="stat-label">Successful Retries</span>
-            <span className="stat-value">{retryData.retryStats.successfulRetries}</span>
+            <span className="stat-value">
+              {retryData.retryStats.successfulRetries}
+            </span>
           </div>
 
           <div className="stat">
             <span className="stat-label">Failed Retries</span>
-            <span className="stat-value">{retryData.retryStats.failedRetries}</span>
+            <span className="stat-value">
+              {retryData.retryStats.failedRetries}
+            </span>
           </div>
 
           <div className="stat">
             <span className="stat-label">Recovery Rate</span>
-            <span className="stat-value">{retryData.retryStats.recoveryRate}</span>
+            <span className="stat-value">
+              {retryData.retryStats.recoveryRate}
+            </span>
           </div>
         </div>
       )}
@@ -156,23 +155,19 @@ function ApiDetails() {
       {degradation && (
         <div className="info-card">
           <p>
-            <strong>Degraded:</strong>{" "}
-            {degradation.isDegraded ? "Yes" : "No"}
+            <strong>Degraded:</strong> {degradation.isDegraded ? "Yes" : "No"}
           </p>
 
           <p>
-            <strong>Severity:</strong>{" "}
-            {degradation.severity}
+            <strong>Severity:</strong> {degradation.severity}
           </p>
 
           <p>
-            <strong>Reason:</strong>{" "}
-            {degradation.reason}
+            <strong>Reason:</strong> {degradation.reason}
           </p>
 
           <p>
-            <strong>Logs Analyzed:</strong>{" "}
-            {degradation.logsAnalyzed}
+            <strong>Logs Analyzed:</strong> {degradation.logsAnalyzed}
           </p>
         </div>
       )}
@@ -180,4 +175,4 @@ function ApiDetails() {
   );
 }
 
-export default ApiDetails;//ApiDetails.jsx
+export default ApiDetails; //ApiDetails.jsx

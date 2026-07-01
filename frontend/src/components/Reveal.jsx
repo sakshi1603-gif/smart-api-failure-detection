@@ -25,7 +25,7 @@ export default function Reveal({ children, delay = 0, threshold = 0.15 }) {
           observer.unobserve(el); // only animate once
         }
       },
-      { threshold }
+      { threshold },
     );
     observer.observe(el);
     return () => observer.disconnect();
