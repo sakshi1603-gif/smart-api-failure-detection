@@ -17,9 +17,60 @@ exports.registerApi = async (req, res) => {
 };
 
 //GET /apis
+//GET /apis
 exports.getApis = async (req, res) => {
-    const apis = await Api.find();
-    res.status(200).json(apis);
+  try {
+    let {
+      page = 1,
+      limit = 10,
+      search = "",
+      status = ""
+    } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    const query = {};
+
+    // Search by API name
+    if (search) {
+      query.name = {
+        $regex: search,
+        $options: "i"
+      };
+    }
+
+    // Filter by health status
+    if (status) {
+      query.currentHealthStatus = status;
+    }
+
+    const totalApis = await Api.countDocuments(query);
+
+    const apis = await Api.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalApis,
+      totalPages: Math.ceil(totalApis / limit),
+      hasNextPage: page < Math.ceil(totalApis / limit),
+      hasPrevPage: page > 1,
+      apis
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
 };
 
 // Utility function to log health check results
@@ -205,20 +256,89 @@ exports.getBlockedApis = async (req, res) => {
   }
 };
 
-exports.getApiById = async (req, res) => {
-  try {
-    const api = await Api.findById(req.params.id);
+//GET /apis/:id/uptime
+exports.getApiUptime = async (req, res) => {
 
-    if (!api) {
-      return res.status(404).json({
-        error: "API not found",
+  try {
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: "Invalid API ID"
       });
     }
 
-    res.status(200).json(api);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
+    const api = await Api.findById(id);
+
+    if (!api) {
+      return res.status(404).json({
+        error: "API not found"
+      });
+    }
+
+    async function calculateUptime(days) {
+
+      const fromDate = new Date(
+        Date.now() - days * 24 * 60 * 60 * 1000
+      );
+
+      const logs = await ApiHealthLog.find({
+        apiId: id,
+        checkedAt: {
+          $gte: fromDate
+        }
+      });
+
+      const totalChecks = logs.length;
+
+      const healthyChecks = logs.filter(
+        log => log.healthStatus === "HEALTHY"
+      ).length;
+
+      const failedChecks = logs.filter(
+        log => log.healthStatus === "FAILED"
+      ).length;
+
+      const slowChecks = logs.filter(
+        log => log.healthStatus === "SLOW"
+      ).length;
+
+      const uptime =
+        totalChecks === 0
+          ? 0
+          : Number(((healthyChecks / totalChecks) * 100).toFixed(2));
+
+      return {
+        uptime,
+        totalChecks,
+        healthyChecks,
+        failedChecks,
+        slowChecks
+      };
+
+    }
+
+    const last24Hours = await calculateUptime(1);
+    const last7Days = await calculateUptime(7);
+    const last30Days = await calculateUptime(30);
+
+    res.status(200).json({
+      apiId: api._id,
+      apiName: api.name,
+      last24Hours,
+      last7Days,
+      last30Days
     });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
+
 };
