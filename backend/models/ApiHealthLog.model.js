@@ -51,6 +51,10 @@ apiHealthLogSchema.index({ apiId: 1, checkedAt: -1 });
 apiHealthLogSchema.index({ healthStatus: 1 });
 apiHealthLogSchema.index({ failureType: 1 });
 
+apiHealthLogSchema.index(
+  { checkedAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 30 }
+);
 const ApiHealthLog = mongoose.model("ApiHealthLog", apiHealthLogSchema);
 
 module.exports = ApiHealthLog;
