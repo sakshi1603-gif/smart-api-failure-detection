@@ -1,40 +1,214 @@
-.container {
-  padding: 20px;
+@import "./theme.css";
+
+.monitoring-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 28px 80px;
+  font-family: var(--font-body);
+  color: var(--text);
 }
 
-table {
+.monitoring-page h1 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+}
+
+/* ---------- toolbar ---------- */
+.monitoring-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.monitoring-toolbar input,
+.monitoring-toolbar select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 11px 16px;
+  backdrop-filter: blur(10px);
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.monitoring-toolbar input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.monitoring-toolbar input::placeholder {
+  color: var(--text-faint);
+}
+
+.monitoring-toolbar select {
+  min-width: 150px;
+  cursor: pointer;
+}
+
+.monitoring-toolbar input:focus,
+.monitoring-toolbar select:focus {
+  border-color: var(--accent);
+  background: var(--panel-hover);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------- table ---------- */
+.monitoring-page .table-wrapper {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  overflow-x: auto;
+}
+
+.monitoring-page table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 12px;
+.monitoring-page thead {
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.status {
-  padding: 6px 10px;
-  border-radius: 5px;
-  font-weight: bold;
+.monitoring-page th {
+  text-align: left;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
 }
 
-.HEALTHY {
-  background: lightgreen;
+.monitoring-page td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
 }
 
-.SLOW {
-  background: orange;
+.monitoring-page tbody tr:last-child td { border-bottom: none; }
+
+.monitoring-page tbody tr {
+  transition: background 0.15s ease;
 }
 
-.FAILED {
-  background: tomato;
+.monitoring-page tbody tr:hover {
+  background: var(--panel-hover);
 }
 
-.DEGRADED {
-  background: violet;
+/* ---------- status badges (uppercase classes: HEALTHY / FAILED / BLOCKED / DEGRADED / SLOW) ---------- */
+.monitoring-page .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
-.BLOCKED {
-  background: lightgray;
+.monitoring-page .status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.monitoring-page .status.HEALTHY {
+  color: var(--healthy);
+  background: var(--healthy-bg);
+}
+.monitoring-page .status.HEALTHY::before {
+  animation: pill-pulse 1.8s ease-out infinite;
+}
+
+.monitoring-page .status.FAILED   { color: var(--failed);   background: var(--failed-bg); }
+.monitoring-page .status.BLOCKED  { color: var(--blocked);  background: var(--blocked-bg); }
+.monitoring-page .status.DEGRADED { color: var(--degraded); background: var(--degraded-bg); }
+.monitoring-page .status.SLOW     { color: var(--slow);     background: var(--slow-bg); }
+
+@keyframes pill-pulse {
+  0%   { box-shadow: 0 0 0 0 currentColor; }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---------- view link ---------- */
+.view-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.view-link:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- pagination ---------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.pagination button {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 9px 20px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--panel-hover);
+  transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 600px) {
+  .monitoring-toolbar { flex-direction: column; }
+  .monitoring-toolbar input,
+  .monitoring-toolbar select { width: 100%; }
+  .monitoring-page h1 { font-size: 1.5rem; }
+  .monitoring-page { padding: 32px 16px 60px; }
 }

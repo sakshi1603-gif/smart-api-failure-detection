@@ -13,7 +13,7 @@ function Dashboard() {
 
   const fetchApis = async () => {
     const res = await api.get("/");
-    setApis(res.data);
+    setApis(res.data.apis);
   };
 
   const totalApis = apis.length;
