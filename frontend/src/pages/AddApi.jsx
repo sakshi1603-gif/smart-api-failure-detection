@@ -25,8 +25,7 @@ async function handleSubmit(e) {
   setStatus({ state: "loading", message: "" });
 
   try {
-    const res = await api.post("/", form);
-    const data = res.data;
+    await api.post("/", form);
 
     setStatus({
       state: "success",
@@ -41,7 +40,6 @@ async function handleSubmit(e) {
     });
   }
 }
-
   return (
     <div className="add-api-page">
       <div className="add-api-card glass-panel">
