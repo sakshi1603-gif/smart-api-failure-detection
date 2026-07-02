@@ -79,6 +79,8 @@ export default function Background3D({ theme = "dark" }) {
       <Canvas
         camera={{ position: [0, 0, 8], fov: 60 }}
         dpr={[1, 1.5]} // cap pixel ratio for performance
+        eventSource={document.body}
+        eventPrefix="client"
       >
         <ParticleField color={particleColor} />
         <MouseParallax />

@@ -112,9 +112,6 @@ async function analyzeAllApisDegradation() {
   };
 }
 
-/* =========================
-   UPDATE API STATUS (DAY 11)
-========================= */
 async function updateApiStatusBasedOnDegradation(apiId) {
   try {
     const api = await Api.findById(apiId);
@@ -137,7 +134,6 @@ async function updateApiStatusBasedOnDegradation(apiId) {
         degradationReason: "3 consecutive failures. API temporarily blocked.",
       });
 
-      // ✅ DAY 11 EVENT LOG (WHY visible)
       if (previousStatus !== "BLOCKED") {
         await logEvent({
           apiId,

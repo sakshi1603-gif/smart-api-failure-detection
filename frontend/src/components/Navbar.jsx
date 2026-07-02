@@ -8,15 +8,14 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <div className="navbar-brand">
+        <NavLink to="/" className="navbar-brand">
           <span className="brand-dot" />
           <span>API Health</span>
-        </div>
+        </NavLink>
 
         <div className="navbar-links">
           <NavLink
-            to="/"
-            end
+            to="/dashboard"
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
             Dashboard
@@ -27,6 +26,20 @@ function Navbar() {
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
             API Monitoring
+          </NavLink>
+
+          <NavLink
+            to="/events"
+            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+          >
+            Event Center
+          </NavLink>
+
+          <NavLink
+            to="/add-api"
+            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+          >
+            Add API
           </NavLink>
         </div>
 
@@ -43,7 +56,7 @@ function Navbar() {
               <NavLink to="/login" className="auth-btn">
                 Login
               </NavLink>
-              <NavLink to="/signup" className="auth-btn primary">
+              <NavLink to="/register" className="auth-btn primary">
                 Sign Up
               </NavLink>
             </>

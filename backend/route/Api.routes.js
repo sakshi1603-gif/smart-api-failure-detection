@@ -5,7 +5,7 @@ const ApiController = require("../controller/Api.controller");
 //main API routes
 router.post("/", ApiController.registerApi);
 router.get("/", ApiController.getApis);
-
+router.get("/events", ApiController.getEvents);
 //history routes
 router.get("/:id/history", ApiController.getApiHistory);
 router.get("/:id/retry-history", ApiController.getRetryHistory);

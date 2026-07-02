@@ -1,5 +1,7 @@
 const Api = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
+const Event = require("../models/ApiEventLog.model");
+
 const mongoose = require("mongoose");
 const {
   analyzeApiDegradation,
@@ -67,6 +69,19 @@ exports.getApis = async (req, res) => {
   }
 };
 
+exports.getEvents = async (req, res) => {
+    try {
+        const events = await Event.find()
+            .populate("apiId", "name url")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(events);
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+};
 // Utility function to log health check results
 exports.logHealthCheck = async (apiId, result) => {
   try {

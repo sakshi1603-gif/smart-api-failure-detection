@@ -3,9 +3,7 @@ const ApiModel = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const { detectHealthStatus } = require("./failureDetector.service");
 const { retryFailedApi } = require("./retry.service");
-const {
-  updateApiStatusBasedOnDegradation,
-} = require("./degradationAnalyzer.service");
+const {updateApiStatusBasedOnDegradation,} = require("./degradationAnalyzer.service");
 const { updateRecoveryStatus } = require("./recoveryStatusUpdater.service");
 const { logEvent } = require("./eventLogger.service");
 
