@@ -8,20 +8,20 @@ import "../styles/landing.css";
 
 const FEATURES = [
   {
-    title: "Real-time health checks",
-    desc: "Pings every registered endpoint on a schedule and flags failures the moment they happen.",
+    title: "Real-time API Monitoring",
+    desc: "Continuously monitors registered APIs and displays their current health status.",
   },
   {
-    title: "Auto-recovery engine",
-    desc: "Retries with backoff, fails over to a backup, or restarts the service automatically.",
+    title: "Failure Detection",
+    desc: "Detects failed, slow, healthy, and blocked APIs based on response time and status codes.",
   },
   {
-    title: "Incident timeline",
-    desc: "Every failure and recovery attempt is logged so you can see exactly what happened, when.",
+    title: "Auto Retry & Recovery",
+    desc: "Automatically retries failed APIs and applies cooldown blocking when repeated failures occur.",
   },
   {
-    title: "Alerting",
-    desc: "Get notified the instant something goes down, before your users notice.",
+    title: "Dashboard & Health History",
+    desc: "View API status, response times, SLA metrics, and monitoring history from a centralized dashboard.",
   },
 ];
 
@@ -48,17 +48,19 @@ function Landing() {
   return (
     <div className="landing-page">
       <section className="hero">
-        <p className="hero-eyebrow">Uptime, watched closely</p>
-        <h1 className="hero-title">Smart API Failure Detection</h1>
+        <p className="hero-eyebrow">Monitor • Detect • Recover</p>
+        <h1 className="hero-title">
+           Smart API Failure Detection & Auto-Recovery System
+        </h1>
         <p className="hero-subtitle">
-          Move your mouse — the particles drift in 3D space with a parallax effect.
+          Monitor API health in real time, detect failures instantly, and automate recovery using intelligent retry and cooldown mechanisms.
         </p>
         <div className="hero-actions">
           <Link to="/dashboard" className="hero-cta primary">
-            Open dashboard
+            Go to Dashboard
           </Link>
           <Link to="/monitoring" className="hero-cta">
-            View monitoring
+            View API Monitoring
           </Link>
         </div>
         <div className="scroll-cue">
