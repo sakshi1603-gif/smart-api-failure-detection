@@ -60,9 +60,9 @@ function ParticleField({
  * Usage:
  *   <Background3D theme="dark" />
  */
-export default function Background3D({ theme = "dark" }) {
-  const bg = theme === "dark" ? "#05050a" : "#f5f6fa";
-  const particleColor = theme === "dark" ? "#a8b8ff" : "#4a5aa8";
+export default function Background3D() {
+  const bg = "#05050a";
+  const particleColor = "#a8b8ff";
 
   return (
     <div

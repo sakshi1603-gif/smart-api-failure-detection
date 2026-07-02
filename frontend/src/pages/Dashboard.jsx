@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
-import { useTheme } from "../context/ThemeContext";
 import "../styles/dashboard.css";
 
 function Dashboard() {
   const [apis, setApis] = useState([]);
-  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     fetchApis();
@@ -32,9 +30,6 @@ function Dashboard() {
     <div className="dashboard-page">
       <div className="dashboard-header">
         <h1>API Health Dashboard</h1>
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
-        </button>
       </div>
 
       <div className="dashboard-cards">
