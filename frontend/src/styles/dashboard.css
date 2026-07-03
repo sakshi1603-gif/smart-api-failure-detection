@@ -34,7 +34,23 @@
   gap: 18px;
   margin-bottom: 44px;
 }
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
+  background: #fff8db;
+  color: #7a5900;
+
+  border: 1px solid #f0c040;
+  border-radius: 10px;
+
+  padding: 14px 18px;
+  margin-bottom: 20px;
+
+  font-size: 15px;
+  font-weight: 500;
+}
 .dashboard-cards .card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -44,7 +60,9 @@
   -webkit-backdrop-filter: blur(14px);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.25s ease, transform 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease;
   opacity: 0;
   animation: card-rise 0.6s ease forwards;
 }
@@ -264,7 +282,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .status-badge.healthy::before,
   .dashboard-cards .card {
     animation: none;

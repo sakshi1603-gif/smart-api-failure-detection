@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../styles/landing.css";
-
 const FEATURES = [
   {
     title: "Real-time API Monitoring",
@@ -24,6 +24,11 @@ const FEATURES = [
 function Landing() {
   const cardsRef = useRef([]);
 
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [loadingDemo, setLoadingDemo] = useState(false);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -40,7 +45,19 @@ function Landing() {
     cardsRef.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
   }, []);
+  async function handleDemoLogin() {
+    try {
+      setLoadingDemo(true);
 
+      await login("demo@smartapi.com", "Demo@123");
+
+      navigate("/dashboard");
+    } catch (err) {
+      alert("Unable to login to demo account.");
+    } finally {
+      setLoadingDemo(false);
+    }
+  }
   return (
     <div className="landing-page">
       <section className="hero">
@@ -53,13 +70,28 @@ function Landing() {
           automate recovery using intelligent retry and cooldown mechanisms.
         </p>
         <div className="hero-actions">
-          <Link to="/dashboard" className="hero-cta primary">
-            Go to Dashboard
+          <Link to="/register" className="hero-cta primary">
+            Get Started
           </Link>
-          <Link to="/monitoring" className="hero-cta">
-            View API Monitoring
+
+          <Link to="/login" className="hero-cta">
+            Login
           </Link>
+
+          <button
+            type="button"
+            className="hero-cta demo-btn"
+            onClick={handleDemoLogin}
+            disabled={loadingDemo}
+          >
+            {loadingDemo ? "Entering Demo..." : "🚀 Explore Demo"}
+          </button>
         </div>
+        <p className="demo-note">
+          ✨ No signup required. Explore the platform instantly with our demo
+          account.
+        </p>
+
         <div className="scroll-cue">
           <span>scroll</span>
           <span className="scroll-line" />

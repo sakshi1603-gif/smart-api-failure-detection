@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import "../styles/dashboard.css";
+import { useAuth } from "../context/AuthContext";
 
 function Dashboard() {
   const [apis, setApis] = useState([]);
-
+  const { user } = useAuth();
   useEffect(() => {
     fetchApis();
   }, []);
@@ -28,10 +29,17 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
+      {user?.email === "demo@smartapi.com" && (
+        <div className="demo-banner">
+          🚀 <strong>Demo Mode</strong>— You're exploring a pre-configured
+          workspace. Browse the dashboard, monitoring, analytics, and event
+          history without creating your own APIs.
+        </div>
+      )}
+
       <div className="dashboard-header">
         <h1>API Health Dashboard</h1>
       </div>
-
       <div className="dashboard-cards">
         <div className="card">
           <h3>Total APIs</h3>

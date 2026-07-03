@@ -149,3 +149,17 @@
   color: var(--text-dim);
   margin: 0;
 }
+.demo-btn {
+  cursor: pointer;
+  border: none;
+}
+
+.demo-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.demo-note {
+  margin-top: 14px;
+  color: #b8b8b8;
+  font-size: 15px;
+}
