@@ -70,17 +70,43 @@ exports.getApis = async (req, res) => {
 };
 
 exports.getEvents = async (req, res) => {
-    try {
-        const events = await Event.find()
-            .populate("apiId", "name url")
-            .sort({ createdAt: -1 });
+  try {
+    let { page = 1, limit = 10, status = "" } = req.query;
 
-        res.status(200).json(events);
-    } catch (err) {
-        res.status(500).json({
-            error: err.message
-        });
+    page = Number(page);
+    limit = Number(limit);
+
+    const query = {};
+
+    // Filter by status
+    if (status) {
+      query.toStatus = status;
     }
+
+    const totalEvents = await Event.countDocuments(query);
+
+    const events = await Event.find(query)
+      .populate("apiId", "name url")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalEvents,
+      totalPages: Math.ceil(totalEvents / limit),
+      hasNextPage: page < Math.ceil(totalEvents / limit),
+      hasPrevPage: page > 1,
+      events,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 };
 // Utility function to log health check results
 exports.logHealthCheck = async (apiId, result) => {

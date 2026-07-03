@@ -2,47 +2,36 @@ import { useEffect, useState } from "react";
 import "../styles/eventcenter.css";
 import api from "../api/api";
 
-// GET /apis/events -> Event.find().populate("apiId", "name url").sort({ createdAt: -1 })
-// Response is a plain array. Field names below (type/status/message) are best
-// guesses at your ApiEventLog schema — tell me the actual fields if these
-// don't match and I'll adjust.
 function EventCenter() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
-
-useEffect(() => {
-  async function fetchEvents() {
-    try {
-      setLoading(true);
-
-      const res = await api.get("/events");
-      const data = res.data;
-
-      setEvents(Array.isArray(data) ? data : data.events || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        setLoading(true);
+        const res = await api.get(
+          `/events?page=${page}&status=${filter === "all" ? "" : filter}`,
+        );
+        setEvents(res.data.events);
+        setTotalPages(res.data.totalPages);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  fetchEvents();
-}, []);
+    fetchEvents();
+  }, [page, filter]);
 
   function getStatus(event) {
-    return (
-      event.status ||
-      event.type ||
-      event.eventType ||
-      event.healthStatus ||
-      "info"
-    ).toLowerCase();
+    return (event.toStatus || "info").toLowerCase();
   }
-
-  const filtered =
-    filter === "all" ? events : events.filter((e) => getStatus(e) === filter);
+  const filtered = events;
 
   return (
     <div className="event-center-page">
@@ -52,11 +41,14 @@ useEffect(() => {
           <p>Every failure, recovery, and health check logged in one place.</p>
         </div>
         <div className="event-filters">
-          {["all", "failure", "recovery", "success", "failed", "healthy"].map((f) => (
+          {["all", "HEALTHY", "FAILED", "SLOW", "BLOCKED"].map((f) => (
             <button
               key={f}
               className={`filter-chip${filter === f ? " active" : ""}`}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f);
+                setPage(1);
+              }}
             >
               {f}
             </button>
@@ -65,7 +57,9 @@ useEffect(() => {
       </div>
 
       {loading && <p className="event-state">Loading events…</p>}
-      {error && <p className="event-state error">Couldn't load events: {error}</p>}
+      {error && (
+        <p className="event-state error">Couldn't load events: {error}</p>
+      )}
       {!loading && !error && filtered.length === 0 && (
         <p className="event-state">
           No events yet. They'll show up here as soon as something happens.
@@ -77,7 +71,8 @@ useEffect(() => {
           const status = getStatus(event);
           const apiName = event.apiId?.name || event.apiName || "Unknown API";
           const apiUrl = event.apiId?.url || event.url || "";
-          const timestamp = event.createdAt || event.timestamp || event.checkedAt;
+          const timestamp =
+            event.createdAt || event.timestamp || event.checkedAt;
 
           return (
             <div key={event._id || i} className="event-row glass-panel">
@@ -88,14 +83,36 @@ useEffect(() => {
                     {timestamp ? new Date(timestamp).toLocaleString() : ""}
                   </span>
                 </div>
-                <span className={`status-pill pulse status-${status}`}>{status}</span>
+                <span className={`status-pill pulse status-${status}`}>
+                  {status}
+                </span>
                 <p className="event-message">
-                  {event.message || event.description || event.reason || apiUrl || "No details provided."}
+                  {event.message ||
+                    event.description ||
+                    event.reason ||
+                    apiUrl ||
+                    "No details provided."}
                 </p>
               </div>
             </div>
           );
         })}
+      </div>
+      <div className="pagination">
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          Previous
+        </button>
+
+        <span>
+          Page {page} of {totalPages}
+        </span>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
       </div>
     </div>
   );
