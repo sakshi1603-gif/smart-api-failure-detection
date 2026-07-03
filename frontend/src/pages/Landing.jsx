@@ -84,7 +84,7 @@ function Landing() {
             onClick={handleDemoLogin}
             disabled={loadingDemo}
           >
-            {loadingDemo ? "Entering Demo..." : "🚀 Explore Demo"}
+            {loadingDemo ? "Entering Demo..." : "Explore Demo"}
           </button>
         </div>
         <p className="demo-note">
