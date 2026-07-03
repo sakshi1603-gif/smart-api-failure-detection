@@ -19,10 +19,10 @@ function ApiDetails() {
   const fetchAllData = async () => {
     try {
       const [apiRes, historyRes, retryRes, degradationRes] = await Promise.all([
-        api.get(`/${id}`),
-        api.get(`/${id}/history`),
-        api.get(`/${id}/retry-history`),
-        api.get(`/${id}/degradation`),
+        api.get(`/apis/${id}`),
+        api.get(`/apis/${id}/history`),
+        api.get(`/apis/${id}/retry-history`),
+        api.get(`/apis/${id}/degradation`),
       ]);
 
       setApiData(apiRes.data);

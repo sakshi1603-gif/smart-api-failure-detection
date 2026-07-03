@@ -20,31 +20,34 @@ function AddApi() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-async function handleSubmit(e) {
-  e.preventDefault();
-  setStatus({ state: "loading", message: "" });
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus({ state: "loading", message: "" });
 
-  try {
-    await api.post("/", form);
+    try {
+      await api.post("/apis", form);
 
-    setStatus({
-      state: "success",
-      message: "API registered. Monitoring will pick it up shortly.",
-    });
+      setStatus({
+        state: "success",
+        message: "API registered. Monitoring will pick it up shortly.",
+      });
 
-    setForm(initialForm);
-  } catch (err) {
-    setStatus({
-      state: "error",
-      message: err.response?.data?.error || err.message,
-    });
+      setForm(initialForm);
+    } catch (err) {
+      setStatus({
+        state: "error",
+        message: err.response?.data?.error || err.message,
+      });
+    }
   }
-}
   return (
     <div className="add-api-page">
       <div className="add-api-card glass-panel">
         <h1>Register a new API</h1>
-        <p className="add-api-sub">Register an API endpoint to monitor its health, latency, and availability.</p>
+        <p className="add-api-sub">
+          Register an API endpoint to monitor its health, latency, and
+          availability.
+        </p>
 
         <form onSubmit={handleSubmit} className="add-api-form">
           <label>
@@ -82,18 +85,22 @@ async function handleSubmit(e) {
             </label>
           </div>
           <label>
-  SLA Latency (ms)
-  <input
-    name="slaLatency"
-    type="number"
-    min="0"
-    value={form.slaLatency}
-    onChange={handleChange}
-    required
-  />
-</label>
+            SLA Latency (ms)
+            <input
+              name="slaLatency"
+              type="number"
+              min="0"
+              value={form.slaLatency}
+              onChange={handleChange}
+              required
+            />
+          </label>
 
-          <button type="submit" className="submit-btn" disabled={status.state === "loading"}>
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={status.state === "loading"}
+          >
             {status.state === "loading" ? "Registering…" : "Register API"}
           </button>
 

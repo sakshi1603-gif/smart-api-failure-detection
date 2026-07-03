@@ -11,10 +11,21 @@ const {
 //POST /apis
 exports.registerApi = async (req, res) => {
   try {
-    const api = await Api.create(req.body);
-    res.status(201).json(api);
+    const api = await Api.create({
+      ...req.body,
+      owner: req.user._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "API registered successfully.",
+      api,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -27,7 +38,9 @@ exports.getApis = async (req, res) => {
     page = Number(page);
     limit = Number(limit);
 
-    const query = {};
+    const query = {
+      owner: req.user._id,
+    };
 
     // Search by API name
     if (search) {
@@ -76,7 +89,15 @@ exports.getEvents = async (req, res) => {
     page = Number(page);
     limit = Number(limit);
 
-    const query = {};
+    const userApis = await Api.find({ owner: req.user._id }, "_id");
+
+    const apiIds = userApis.map((api) => api._id);
+
+    const query = {
+      apiId: {
+        $in: apiIds,
+      },
+    };
 
     // Filter by status
     if (status) {
@@ -146,6 +167,17 @@ exports.getApiHistory = async (req, res) => {
       return res.status(400).json({ error: "Invalid API ID" });
     }
 
+    const api = await Api.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
+
+    if (!api) {
+      return res.status(404).json({
+        success: false,
+        message: "API not found.",
+      });
+    }
     const history = await ApiHealthLog.find({ apiId: id })
       .sort({ checkedAt: -1 })
       .limit(100);
@@ -183,9 +215,16 @@ exports.getRetryHistory = async (req, res) => {
     }
 
     // Get API details
-    const api = await Api.findById(id);
+    const api = await Api.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
+
     if (!api) {
-      return res.status(404).json({ error: "API not found" });
+      return res.status(404).json({
+        success: false,
+        message: "API not found.",
+      });
     }
 
     // Get all retry attempts
@@ -241,7 +280,17 @@ exports.getApiDegradationStatus = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid API ID" });
     }
+    const api = await Api.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
 
+    if (!api) {
+      return res.status(404).json({
+        success: false,
+        message: "API not found.",
+      });
+    }
     const degradationStatus = await analyzeApiDegradation(id);
 
     return res.status(200).json(degradationStatus);
@@ -273,26 +322,44 @@ exports.updateApiDegradationStatus = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid API ID" });
     }
+    const api = await Api.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
+
+    if (!api) {
+      return res.status(404).json({
+        success: false,
+        message: "API not found.",
+      });
+    }
+
     await updateApiStatusBasedOnDegradation(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "API degradation status updated successfully",
+    });
     return res
       .status(200)
       .json({ message: "API degradation status updated successfully" });
   } catch (err) {
     console.error("updateApiDegradationStatus error:", err);
-    return res
-      .status(500)
-      .json({ error: "Failed to update API degradation status" });
   }
 };
 
 //GET /apis/status/blocked - get all currently blocked APIs
 exports.getBlockedApis = async (req, res) => {
   try {
+    //   const blockedApis = await Api.find({
+    //     currentHealthStatus: "BLOCKED",
+    //     blockedUntil: { $gt: new Date() },
+    //   }).select("name url blockedUntil degradationReason");
     const blockedApis = await Api.find({
+      owner: req.user._id,
       currentHealthStatus: "BLOCKED",
       blockedUntil: { $gt: new Date() },
-    }).select("name url blockedUntil degradationReason");
-
+    });
     return res.status(200).json({
       count: blockedApis.length,
       blockedApis,
@@ -307,18 +374,26 @@ exports.getBlockedApis = async (req, res) => {
 //GET /apis/:id
 exports.getApiById = async (req, res) => {
   try {
-    const api = await Api.findById(req.params.id);
+    const api = await Api.findOne({
+      _id: req.params.id,
+      owner: req.user._id,
+    });
 
     if (!api) {
       return res.status(404).json({
-        error: "API not found",
+        success: false,
+        message: "API not found.",
       });
     }
 
-    res.status(200).json(api);
+    res.status(200).json({
+      success: true,
+      api,
+    });
   } catch (err) {
     res.status(500).json({
-      error: err.message,
+      success: false,
+      message: err.message,
     });
   }
 };
@@ -334,7 +409,10 @@ exports.getApiUptime = async (req, res) => {
       });
     }
 
-    const api = await Api.findById(id);
+    const api = await Api.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
 
     if (!api) {
       return res.status(404).json({

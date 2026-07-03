@@ -21,7 +21,7 @@ function ApiMonitoring() {
 
   const fetchApis = async () => {
     try {
-      const res = await api.get("/", {
+      const res = await api.get("/apis", {
         params: {
           page,
           limit,

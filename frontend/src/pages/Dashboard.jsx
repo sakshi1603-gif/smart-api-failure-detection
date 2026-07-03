@@ -9,11 +9,11 @@ function Dashboard() {
     fetchApis();
   }, []);
 
- const fetchApis = async () => {
-  const res = await api.get("/");
-  console.log(res.data);
-  setApis(res.data.apis);
-};
+  const fetchApis = async () => {
+    const res = await api.get("/apis");
+    console.log(res.data);
+    setApis(res.data.apis);
+  };
 
   const totalApis = apis.length;
   const healthyApis = apis.filter(

@@ -6,7 +6,7 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 
 // Routes
-const authRoutes = require("./route/auth");
+const authRoutes = require("./route/authRoutes");
 const apiRoutes = require("./route/Api.routes");
 const analyticsRoutes = require("./route/analytics.routes");
 
@@ -24,10 +24,6 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/apis", apiRoutes);
 app.use("/api/analytics", analyticsRoutes);
-
-// Example protected route
-// const protect = require("./middleware/auth");
-// app.use("/api/monitoring", protect, monitoringRoutes);
 
 // Connect DB & Start Server
 async function startServer() {

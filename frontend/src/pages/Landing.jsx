@@ -2,10 +2,6 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "../styles/landing.css";
 
-// No local particle canvas here — Background3D is already mounted
-// globally in App.jsx (fixed, full-viewport, behind everything),
-// so this page just needs a transparent background to let it show through.
-
 const FEATURES = [
   {
     title: "Real-time API Monitoring",
@@ -38,7 +34,7 @@ function Landing() {
           }
         });
       },
-      { threshold: 0.25 }
+      { threshold: 0.25 },
     );
 
     cardsRef.current.forEach((el) => el && observer.observe(el));
@@ -50,10 +46,11 @@ function Landing() {
       <section className="hero">
         <p className="hero-eyebrow">Monitor • Detect • Recover</p>
         <h1 className="hero-title">
-           Smart API Failure Detection & Auto-Recovery System
+          Smart API Failure Detection & Auto-Recovery System
         </h1>
         <p className="hero-subtitle">
-          Monitor API health in real time, detect failures instantly, and automate recovery using intelligent retry and cooldown mechanisms.
+          Monitor API health in real time, detect failures instantly, and
+          automate recovery using intelligent retry and cooldown mechanisms.
         </p>
         <div className="hero-actions">
           <Link to="/dashboard" className="hero-cta primary">

@@ -1,63 +1,65 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
-const AuthContext = createContext(null);
+import { loginUser, registerUser, getCurrentUser } from "../api/authApi";
 
-const API_URL = "http://localhost:5000/api/auth"; // change to your deployed backend URL in production
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  // On first load, if there's a saved token, verify it and fetch the user
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    fetch(`${API_URL}/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Invalid session");
-        return res.json();
-      })
-      .then((data) => setUser(data))
-      .catch(() => {
+    async function loadUser() {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await getCurrentUser();
+        setUser(res.data.user);
+      } catch (err) {
         localStorage.removeItem("token");
         setToken(null);
-      })
-      .finally(() => setLoading(false));
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUser();
   }, [token]);
-
   async function login(email, password) {
-    const res = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Login failed");
+    try {
+      const res = await loginUser({ email, password });
 
-    localStorage.setItem("token", data.token);
-    setToken(data.token);
-    setUser({ _id: data._id, name: data.name, email: data.email });
-    return data;
+      localStorage.setItem("token", res.data.token);
+      setToken(res.data.token);
+      setUser(res.data.user);
+
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Login failed");
+    }
   }
 
   async function register(name, email, password) {
-    const res = await fetch(`${API_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Registration failed");
+    try {
+      const res = await registerUser({
+        name,
+        email,
+        password,
+      });
 
-    localStorage.setItem("token", data.token);
-    setToken(data.token);
-    setUser({ _id: data._id, name: data.name, email: data.email });
-    return data;
+      localStorage.setItem("token", res.data.token);
+      setToken(res.data.token);
+      setUser(res.data.user);
+
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Registration failed");
+    }
   }
 
   function logout() {

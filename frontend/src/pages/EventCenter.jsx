@@ -14,7 +14,7 @@ function EventCenter() {
       try {
         setLoading(true);
         const res = await api.get(
-          `/events?page=${page}&status=${filter === "all" ? "" : filter}`,
+          `/apis/events?page=${page}&status=${filter === "all" ? "" : filter}`,
         );
         setEvents(res.data.events);
         setTotalPages(res.data.totalPages);

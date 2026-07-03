@@ -4,25 +4,34 @@ const ApiHealthLog = require("../models/ApiHealthLog.model");
 exports.getDashboardAnalytics = async (req, res) => {
   try {
     // Start of today's date (00:00:00)
+    const userApis = await Api.find({ owner: req.user._id }, "_id");
+
+    const apiIds = userApis.map((api) => api._id);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // ---------- API COLLECTION ----------
-    const totalApis = await Api.countDocuments();
+    const totalApis = await Api.countDocuments({
+      owner: req.user._id,
+    });
 
     const healthyApis = await Api.countDocuments({
+      owner: req.user._id,
       currentHealthStatus: "HEALTHY",
     });
 
     const failedApis = await Api.countDocuments({
+      owner: req.user._id,
       currentHealthStatus: "FAILED",
     });
 
     const slowApis = await Api.countDocuments({
+      owner: req.user._id,
       currentHealthStatus: "SLOW",
     });
 
     const blockedApis = await Api.countDocuments({
+      owner: req.user._id,
       currentHealthStatus: "BLOCKED",
     });
 
@@ -30,6 +39,9 @@ exports.getDashboardAnalytics = async (req, res) => {
     const dashboardStats = await ApiHealthLog.aggregate([
       {
         $match: {
+          apiId: {
+            $in: apiIds,
+          },
           checkedAt: {
             $gte: today,
           },
@@ -38,7 +50,10 @@ exports.getDashboardAnalytics = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalChecksToday: { $sum: 1 },
+
+          totalChecksToday: {
+            $sum: 1,
+          },
 
           totalFailuresToday: {
             $sum: {
