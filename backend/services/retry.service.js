@@ -12,7 +12,6 @@ const BASE_DELAY = 10000; // 10 sec
 
 async function retryFailedApi(api, retryAttempt = 1) {
   if (retryAttempt > MAX_RETRIES) {
-    console.log(api.url, "→ Max retries reached");
     await updateApiStatusBasedOnDegradation(api._id);
     return;
   }
@@ -57,7 +56,6 @@ async function retryFailedApi(api, retryAttempt = 1) {
         degradationReason: null,
       });
 
-      console.log(api.url, `→ RECOVERED on retry ${retryAttempt}`);
     } catch (err) {
       const responseTime = Date.now() - start;
 

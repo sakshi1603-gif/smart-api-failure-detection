@@ -3,7 +3,9 @@ const ApiModel = require("../models/Api.model");
 const ApiHealthLog = require("../models/ApiHealthLog.model");
 const { detectHealthStatus } = require("./failureDetector.service");
 const { retryFailedApi } = require("./retry.service");
-const {updateApiStatusBasedOnDegradation,} = require("./degradationAnalyzer.service");
+const {
+  updateApiStatusBasedOnDegradation,
+} = require("./degradationAnalyzer.service");
 const { updateRecoveryStatus } = require("./recoveryStatusUpdater.service");
 const { logEvent } = require("./eventLogger.service");
 
@@ -12,30 +14,15 @@ const TIMEOUT = 5000;
 async function monitorAllAPIs() {
   const apis = await ApiModel.find();
 
-  console.log(
-    `\n📊 [${new Date().toLocaleTimeString()}] Monitoring ${apis.length} APIs...\n`,
-  );
-
-  let successCount = 0;
-  let failureCount = 0;
-  let slowCount = 0;
-
   for (const api of apis) {
-    /* =======================
-       🚫 SKIP BLOCKED APIs
-    ======================== */
     if (
       api.currentHealthStatus === "BLOCKED" &&
       api.blockedUntil &&
       new Date() < api.blockedUntil
     ) {
-      console.log(`🚫 Skipping ${api.url} (BLOCKED until ${api.blockedUntil})`);
       continue;
     }
 
-    /* =======================
-       ✅ AUTO-UNBLOCK
-    ======================== */
     if (
       api.currentHealthStatus === "BLOCKED" &&
       api.blockedUntil &&
@@ -58,7 +45,7 @@ async function monitorAllAPIs() {
             timedOut: false,
             responseTime,
           },
-          api.slaLatency,
+          api.slaLatency
         );
 
         await updateRecoveryStatus({
@@ -76,7 +63,7 @@ async function monitorAllAPIs() {
         });
       }
 
-      continue; // 🔒 only ONE test request
+      continue;
     }
 
     const start = Date.now();
@@ -96,8 +83,9 @@ async function monitorAllAPIs() {
           timedOut: false,
           responseTime,
         },
-        api.slaLatency,
+        api.slaLatency
       );
+
       const previousStatus = api.currentHealthStatus;
 
       if (previousStatus !== healthStatus) {
@@ -108,6 +96,7 @@ async function monitorAllAPIs() {
           reason: "Health status changed during monitoring",
         });
       }
+
       await ApiHealthLog.create({
         apiId: api._id,
         statusCode: response.status,
@@ -118,7 +107,6 @@ async function monitorAllAPIs() {
         checkedAt: new Date(),
       });
 
-      /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {
         await ApiModel.findByIdAndUpdate(api._id, {
           currentHealthStatus: healthStatus,
@@ -128,16 +116,8 @@ async function monitorAllAPIs() {
 
       if (healthStatus === "FAILED") {
         retryFailedApi(api).catch((err) =>
-          console.error(`Retry error for ${api.url}:`, err.message),
+          console.error(`Retry error for ${api.url}:`, err.message)
         );
-      }
-
-      if (healthStatus === "SLOW") {
-        slowCount++;
-        console.log(`⚠️  SLOW   | ${api.name.padEnd(20)} | ${responseTime}ms`);
-      } else if (healthStatus === "HEALTHY") {
-        successCount++;
-        console.log(`✅ HEALTHY | ${api.name.padEnd(20)} | ${responseTime}ms`);
       }
     } catch (err) {
       const responseTime = Date.now() - start;
@@ -148,11 +128,12 @@ async function monitorAllAPIs() {
           timedOut: err.code === "ECONNABORTED",
           responseTime,
         },
-        api.slaLatency,
+        api.slaLatency
       );
 
       const failureType =
         err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
+
       const previousStatus = api.currentHealthStatus;
 
       if (previousStatus !== healthStatus) {
@@ -174,7 +155,6 @@ async function monitorAllAPIs() {
         checkedAt: new Date(),
       });
 
-      /* ❗ Do NOT overwrite BLOCKED */
       if (api.currentHealthStatus !== "BLOCKED") {
         await ApiModel.findByIdAndUpdate(api._id, {
           currentHealthStatus: healthStatus,
@@ -184,34 +164,20 @@ async function monitorAllAPIs() {
 
       if (healthStatus === "FAILED") {
         retryFailedApi(api).catch((err) =>
-          console.error(`Retry error for ${api.url}:`, err.message),
+          console.error(`Retry error for ${api.url}:`, err.message)
         );
       }
-
-      failureCount++;
-      console.log(
-        `❌ FAILED  | ${api.name.padEnd(20)} | ${responseTime}ms | ${failureType}`,
-      );
     }
   }
 
-  /* =======================
-     📊 SUMMARY
-  ======================== */
-  console.log(`\n📈 Monitoring Cycle Summary:`);
-  console.log(`   ✅ Healthy: ${successCount}`);
-  console.log(`   ⚠️  Slow:    ${slowCount}`);
-  console.log(`   ❌ Failed:  ${failureCount}`);
-  console.log(`   📊 Total:   ${apis.length}\n`);
-
-  /* =======================
-     🧠 DEGRADATION ANALYSIS
-  ======================== */
   for (const api of apis) {
     try {
       await updateApiStatusBasedOnDegradation(api._id);
     } catch (err) {
-      console.error(`Degradation analysis error for ${api.url}:`, err.message);
+      console.error(
+        `Degradation analysis error for ${api.url}:`,
+        err.message
+      );
     }
   }
 }

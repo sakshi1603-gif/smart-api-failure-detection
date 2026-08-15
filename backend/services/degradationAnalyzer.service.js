@@ -143,7 +143,6 @@ async function updateApiStatusBasedOnDegradation(apiId) {
         });
       }
 
-      console.log(`🚫 API ${apiId} BLOCKED until ${blockedUntil}`);
       return { status: "BLOCKED", blockedUntil };
     }
 

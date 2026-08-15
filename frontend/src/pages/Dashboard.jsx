@@ -12,7 +12,6 @@ function Dashboard() {
 
   const fetchApis = async () => {
     const res = await api.get("/apis");
-    console.log(res.data);
     setApis(res.data.apis);
   };
 

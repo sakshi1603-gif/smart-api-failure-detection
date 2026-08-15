@@ -9,11 +9,5 @@ function detectHealthStatus(result, slaLatency) {
 
   return "HEALTHY";
 }
-// const status = detectHealthStatus(
-//   { statusCode: 200, timedOut: true, responseTime: 6000 },
-//   5000
-// );
-// console.log(status);
-// // → "FAILED"
 
 module.exports = { detectHealthStatus };
