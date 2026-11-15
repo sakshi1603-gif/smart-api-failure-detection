@@ -340,7 +340,7 @@ exports.getApiDegradationStatus = async (req, res) => {
 //GET /apis/degradation/all - check degradation status of ALL APIs
 exports.getAllApisDegradationStatus = async (req, res) => {
   try {
-    const degradationReport = await analyzeAllApisDegradation();
+    const degradationReport = await analyzeAllApisDegradation(req.user._id);
     return res.status(200).json(degradationReport);
   } catch (err) {
     console.error("getAllApisDegradationStatus error:", err);
