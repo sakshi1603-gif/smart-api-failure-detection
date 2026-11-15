@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
+import usePolling from "../hooks/usePolling";
 import "../styles/monitoring.css";
 
 function ApiMonitoring() {
@@ -14,20 +15,10 @@ function ApiMonitoring() {
 
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchApis();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, status]);
-
   const fetchApis = async () => {
     try {
       const res = await api.get("/apis", {
-        params: {
-          page,
-          limit,
-          search,
-          status,
-        },
+        params: { page, limit, search, status },
       });
 
       setApis(res.data.apis);
@@ -36,6 +27,8 @@ function ApiMonitoring() {
       console.log(err);
     }
   };
+
+  usePolling(fetchApis, [page, search, status], 15000);
 
   return (
     <div className="monitoring-page">
@@ -59,16 +52,11 @@ function ApiMonitoring() {
           }}
         >
           <option value="">All Status</option>
-
+          <option value="PENDING">Pending</option>
           <option value="HEALTHY">Healthy</option>
-
-          <option value="FAILED">Failed</option>
-
-          <option value="SLOW">Slow</option>
-
-          <option value="BLOCKED">Blocked</option>
-
           <option value="DEGRADED">Degraded</option>
+          <option value="FAILED">Failed</option>
+          <option value="BLOCKED">Blocked</option>
         </select>
       </div>
 
@@ -88,17 +76,13 @@ function ApiMonitoring() {
             {apis.map((apiItem) => (
               <tr key={apiItem._id}>
                 <td>{apiItem.name}</td>
-
                 <td>{apiItem.method}</td>
-
                 <td>
                   <span className={`status ${apiItem.currentHealthStatus}`}>
                     {apiItem.currentHealthStatus}
                   </span>
                 </td>
-
                 <td>{apiItem.slaLatency} ms</td>
-
                 <td>
                   <Link to={`/api/${apiItem._id}`} className="view-link">
                     View
@@ -109,17 +93,18 @@ function ApiMonitoring() {
           </tbody>
         </table>
       </div>
+
       <div className="pagination">
         <button disabled={page === 1} onClick={() => setPage(page - 1)}>
           Previous
         </button>
 
         <span>
-          Page {page} of {totalPages}
+          Page {page} of {Math.max(totalPages, 1)}
         </span>
 
         <button
-          disabled={page === totalPages}
+          disabled={page >= totalPages}
           onClick={() => setPage(page + 1)}
         >
           Next

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import "./auth-theme.css";
+import PasswordInput from "./PasswordInput";
+import "../styles/auth-theme.css";
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -37,8 +39,7 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
-          type="password"
+        <PasswordInput
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -48,7 +49,7 @@ export default function Login() {
           {submitting ? "Logging in..." : "Log in"}
         </button>
         <p>
-          No account? <Link to="/register">Register</Link>
+          No account? <Link to="/register">Sign Up</Link>
         </p>
       </form>
     </div>

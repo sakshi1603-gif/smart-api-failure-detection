@@ -98,3 +98,46 @@
   font-size: 0.85rem;
   text-align: center;
 }
+.auth-form .password-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.auth-form .password-field input {
+  width: 100%;
+  padding-right: 4.5rem;
+  box-sizing: border-box;
+}
+
+.auth-form .password-field .password-toggle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0.5rem;
+  margin: auto 0;
+  height: fit-content;
+  width: auto;
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #5b5f77;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transform: none;
+  transition: color 0.2s ease;
+}
+
+.auth-form .password-field .password-toggle:hover,
+.auth-form .password-field .password-toggle:focus,
+.auth-form .password-field .password-toggle:active {
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  transform: none;
+  color: #6c6cff;
+}

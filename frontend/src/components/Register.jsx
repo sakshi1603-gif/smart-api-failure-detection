@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import "./auth-theme.css";
+import PasswordInput from "./PasswordInput";
+import "../styles/auth-theme.css";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -45,8 +46,7 @@ export default function Register() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
-          type="password"
+        <PasswordInput
           placeholder="Password (min 6 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -54,7 +54,7 @@ export default function Register() {
           required
         />
         <button type="submit" disabled={submitting}>
-          {submitting ? "Creating account..." : "Register"}
+          {submitting ? "Creating account..." : "Sign Up"}
         </button>
         <p>
           Already have an account? <Link to="/login">Log in</Link>

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/api";
+import usePolling from "../hooks/usePolling";
 import "../styles/details.css";
 
 function ApiDetails() {
@@ -10,32 +11,42 @@ function ApiDetails() {
   const [history, setHistory] = useState([]);
   const [retryData, setRetryData] = useState(null);
   const [degradation, setDegradation] = useState(null);
-
-  useEffect(() => {
-    fetchAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  const [error, setError] = useState("");
 
   const fetchAllData = async () => {
-    try {
-      const [apiRes, historyRes, retryRes, degradationRes] = await Promise.all([
+    // allSettled: one failing request no longer blocks the whole page
+    const [apiRes, historyRes, retryRes, degradationRes] =
+      await Promise.allSettled([
         api.get(`/apis/${id}`),
         api.get(`/apis/${id}/history`),
         api.get(`/apis/${id}/retry-history`),
         api.get(`/apis/${id}/degradation`),
       ]);
 
-      setApiData(apiRes.data);
-      setHistory(historyRes.data.history);
-      setRetryData(retryRes.data);
-      setDegradation(degradationRes.data);
-    } catch (err) {
-      console.log(err);
+    if (apiRes.status === "fulfilled") {
+      setApiData(apiRes.value.data.api); // backend returns { success, api }
+      setError("");
+    } else if (!apiData) {
+      setError(
+        apiRes.reason?.response?.data?.message || "Couldn't load this API.",
+      );
     }
+
+    if (historyRes.status === "fulfilled")
+      setHistory(historyRes.value.data.history || []);
+    if (retryRes.status === "fulfilled") setRetryData(retryRes.value.data);
+    if (degradationRes.status === "fulfilled")
+      setDegradation(degradationRes.value.data);
   };
 
+  usePolling(fetchAllData, [id], 15000);
+
   if (!apiData) {
-    return <h2 className="loading-state">Loading...</h2>;
+    return (
+      <h2 className="loading-state">
+        {error || "Loading… (the server may take a few seconds to wake up)"}
+      </h2>
+    );
   }
 
   return (
@@ -102,7 +113,7 @@ function ApiDetails() {
 
       <h2 className="section-title">Retry Statistics</h2>
 
-      {retryData && (
+      {retryData?.retryStats && (
         <div className="info-card stats-grid">
           <div className="stat">
             <span className="stat-label">Total Retries</span>
@@ -159,11 +170,7 @@ function ApiDetails() {
           </p>
 
           <p>
-            <strong>Severity:</strong> {degradation.severity}
-          </p>
-
-          <p>
-            <strong>Reason:</strong> {degradation.reason}
+            <strong>Reason:</strong> {degradation.reason || "None"}
           </p>
 
           <p>
@@ -175,4 +182,4 @@ function ApiDetails() {
   );
 }
 
-export default ApiDetails; //ApiDetails.jsx
+export default ApiDetails;
