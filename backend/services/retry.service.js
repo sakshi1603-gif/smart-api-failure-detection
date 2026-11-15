@@ -1,98 +1,38 @@
-const axios = require("axios");
-const ApiHealthLog = require("../models/ApiHealthLog.model");
-const ApiModel = require("../models/Api.model");
-const { detectHealthStatus } = require("./failureDetector.service");
-const {
-  updateApiStatusBasedOnDegradation,
-} = require("./degradationAnalyzer.service");
+const Api = require("../models/Api.model");
+const { runCheck } = require("./statusEngine.service");
 
-const TIMEOUT = 5000;
 const MAX_RETRIES = 3;
-const BASE_DELAY = 10000; // 10 sec
+const BASE_DELAY = Number(process.env.RETRY_BASE_DELAY_MS || 10000);
+const retrying = new Set(); // one retry chain per API; cycles used to stack chains
 
-async function retryFailedApi(api, retryAttempt = 1) {
-  if (retryAttempt > MAX_RETRIES) {
-    await updateApiStatusBasedOnDegradation(api._id);
-    return;
+function scheduleRetries(apiId, attempt = 1) {
+  const key = String(apiId);
+  if (attempt === 1) {
+    if (retrying.has(key)) return;
+    retrying.add(key);
   }
-
-  const delay = retryAttempt * BASE_DELAY;
+  if (attempt > MAX_RETRIES) return void retrying.delete(key);
 
   setTimeout(async () => {
-    const start = Date.now();
-
+    let next = false;
     try {
-      const response = await axios({
-        method: api.method,
-        url: api.url,
-        timeout: TIMEOUT,
-      });
-
-      const responseTime = Date.now() - start;
-
-      const healthStatus = detectHealthStatus(
-        {
-          statusCode: response.status,
-          timedOut: false,
-          responseTime,
-        },
-        api.slaLatency,
-      );
-
-      await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: response.status,
-        responseTime,
-        isSuccess: healthStatus !== "FAILED",
-        healthStatus,
-        failureType: "NONE",
-        isRetry: true,
-        retryAttempt,
-        checkedAt: new Date(),
-      });
-
-      await ApiModel.findByIdAndUpdate(api._id, {
-        currentHealthStatus: healthStatus,
-        degradationReason: null,
-      });
-
+      const api = await Api.findById(key).lean();
+      if (api && api.isActive && api.currentHealthStatus !== "BLOCKED") {
+        const out = await runCheck(api, {
+          isRetry: true,
+          retryAttempt: attempt,
+        });
+        next = out.healthStatus === "FAILED" && out.status !== "BLOCKED";
+      }
     } catch (err) {
-      const responseTime = Date.now() - start;
-
-      const healthStatus = detectHealthStatus(
-        {
-          statusCode: err.response?.status || 0,
-          timedOut: err.code === "ECONNABORTED",
-          responseTime,
-        },
-        api.slaLatency,
-      );
-
-      const failureType =
-        err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
-
-      await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: err.response?.status || 0,
-        responseTime,
-        isSuccess: false,
-        healthStatus,
-        failureType,
-        isRetry: true,
-        retryAttempt,
-        checkedAt: new Date(),
-      });
-
-      await ApiModel.findByIdAndUpdate(api._id, {
-        currentHealthStatus: healthStatus,
-        degradationReason: healthStatus === "FAILED" ? failureType : null,
-      });
-
-      console.log(api.url, `→ Retry ${retryAttempt} FAILED`);
-
-      retryFailedApi(api, retryAttempt + 1);
+      console.error(`Retry error for ${key}:`, err.message);
     }
-  }, delay);
+    if (next) scheduleRetries(key, attempt + 1);
+    else retrying.delete(key);
+  }, attempt * BASE_DELAY);
 }
 
-module.exports = { retryFailedApi };
+module.exports = {
+  scheduleRetries,
+  retryFailedApi: (api) => scheduleRetries(api._id),
+};

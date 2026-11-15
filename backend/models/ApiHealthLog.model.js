@@ -6,54 +6,63 @@ const apiHealthLogSchema = new mongoose.Schema({
     ref: "Api",
     required: true,
   },
+
   statusCode: {
     type: Number,
-    required: true,
+    default: 0,
   },
+
   responseTime: {
     type: Number,
-    required: true,
+    default: 0,
   },
+
   isSuccess: {
     type: Boolean,
-    default: function () {
-      return this.statusCode >= 200 && this.statusCode < 400; //Automatically set based on statusCode
-    },
+    default: false,
   },
 
   healthStatus: {
     type: String,
-    enum: ["FAILED", "SLOW", "HEALTHY"],
+    enum: ["HEALTHY", "DEGRADED", "FAILED"],
     required: true,
   },
+
   failureType: {
     type: String,
-    enum: ["NONE", "TIMEOUT", "SERVER_ERROR"],
+    enum: [
+      "NONE",
+      "TIMEOUT",
+      "NETWORK_ERROR",
+      "CLIENT_ERROR",
+      "SERVER_ERROR",
+      "REDIRECT_ERROR",
+      "SLA_BREACH",
+      "BLOCKED_TARGET",
+    ],
     default: "NONE",
   },
-  retryAttempt: {
-    type: Number,
-    default: 0,
-  },
+
   isRetry: {
     type: Boolean,
     default: false,
   },
+
+  retryAttempt: {
+    type: Number,
+    default: null,
+  },
+
   checkedAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-//Add indexes for efficient querying
+// Fast lookup of the latest logs for one API
 apiHealthLogSchema.index({ apiId: 1, checkedAt: -1 });
-apiHealthLogSchema.index({ healthStatus: 1 });
-apiHealthLogSchema.index({ failureType: 1 });
 
-apiHealthLogSchema.index(
-  { checkedAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 },
-);
-const ApiHealthLog = mongoose.model("ApiHealthLog", apiHealthLogSchema);
+// Auto-delete logs older than 30 days so the collection doesn't grow forever
+apiHealthLogSchema.index({ checkedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
-module.exports = ApiHealthLog;
+module.exports = mongoose.model("ApiHealthLog", apiHealthLogSchema);

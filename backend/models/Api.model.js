@@ -28,7 +28,7 @@ const apiSchema = new mongoose.Schema(
 
     method: {
       type: String,
-      enum: ["GET", "POST", "PUT", "DELETE"],
+      enum: ["GET"],
       default: "GET",
     },
 
@@ -40,8 +40,8 @@ const apiSchema = new mongoose.Schema(
 
     currentHealthStatus: {
       type: String,
-      enum: ["HEALTHY", "SLOW", "FAILED", "DEGRADED", "BLOCKED"],
-      default: "HEALTHY",
+      enum: ["PENDING", "HEALTHY", "DEGRADED", "FAILED", "BLOCKED"],
+      default: "PENDING",
     },
 
     degradationReason: {
@@ -50,6 +50,11 @@ const apiSchema = new mongoose.Schema(
     },
 
     blockedUntil: {
+      type: Date,
+      default: null,
+    },
+
+    windowStart: {
       type: Date,
       default: null,
     },

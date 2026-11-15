@@ -1,184 +1,52 @@
-const axios = require("axios");
-const ApiModel = require("../models/Api.model");
-const ApiHealthLog = require("../models/ApiHealthLog.model");
-const { detectHealthStatus } = require("./failureDetector.service");
-const { retryFailedApi } = require("./retry.service");
-const {
-  updateApiStatusBasedOnDegradation,
-} = require("./degradationAnalyzer.service");
-const { updateRecoveryStatus } = require("./recoveryStatusUpdater.service");
-const { logEvent } = require("./eventLogger.service");
+const Api = require("../models/Api.model");
+const { runCheck } = require("./statusEngine.service");
+const { scheduleRetries } = require("./retry.service");
 
-const TIMEOUT = 5000;
+const CONCURRENCY = Number(process.env.MONITOR_CONCURRENCY || 20);
+let running = false; // node-cron starts a new run even if the last one is still going
+
+async function pool(items, limit, fn) {
+  let i = 0;
+  const worker = async () => {
+    while (i < items.length) {
+      const item = items[i++];
+      try {
+        await fn(item);
+      } catch (err) {
+        console.error(`Check failed for ${item.url}:`, err.message);
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, worker)
+  );
+}
+
+async function checkOne(api) {
+  if (api.currentHealthStatus === "BLOCKED") {
+    if (api.blockedUntil && Date.now() < new Date(api.blockedUntil).getTime())
+      return; // still cooling down
+    await runCheck(api, { isProbe: true }); // cooldown over: single probe
+    return;
+  }
+  const out = await runCheck(api);
+  if (out.healthStatus === "FAILED" && out.status !== "BLOCKED")
+    scheduleRetries(api._id);
+}
 
 async function monitorAllAPIs() {
-  const apis = await ApiModel.find();
-
-  for (const api of apis) {
-    if (
-      api.currentHealthStatus === "BLOCKED" &&
-      api.blockedUntil &&
-      new Date() < api.blockedUntil
-    ) {
-      continue;
-    }
-
-    if (
-      api.currentHealthStatus === "BLOCKED" &&
-      api.blockedUntil &&
-      new Date() >= api.blockedUntil
-    ) {
-      const start = Date.now();
-
-      try {
-        const response = await axios({
-          method: api.method,
-          url: api.url,
-          timeout: TIMEOUT,
-        });
-
-        const responseTime = Date.now() - start;
-
-        const healthStatus = detectHealthStatus(
-          {
-            statusCode: response.status,
-            timedOut: false,
-            responseTime,
-          },
-          api.slaLatency
-        );
-
-        await updateRecoveryStatus({
-          apiId: api._id,
-          healthStatus,
-          responseTime,
-          statusCode: response.status,
-        });
-      } catch (err) {
-        await updateRecoveryStatus({
-          apiId: api._id,
-          healthStatus: "FAILED",
-          responseTime: TIMEOUT,
-          statusCode: 0,
-        });
-      }
-
-      continue;
-    }
-
-    const start = Date.now();
-
-    try {
-      const response = await axios({
-        method: api.method,
-        url: api.url,
-        timeout: TIMEOUT,
-      });
-
-      const responseTime = Date.now() - start;
-
-      const healthStatus = detectHealthStatus(
-        {
-          statusCode: response.status,
-          timedOut: false,
-          responseTime,
-        },
-        api.slaLatency
-      );
-
-      const previousStatus = api.currentHealthStatus;
-
-      if (previousStatus !== healthStatus) {
-        await logEvent({
-          apiId: api._id,
-          fromStatus: previousStatus,
-          toStatus: healthStatus,
-          reason: "Health status changed during monitoring",
-        });
-      }
-
-      await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: response.status,
-        responseTime,
-        isSuccess: healthStatus !== "FAILED",
-        healthStatus,
-        failureType: "NONE",
-        checkedAt: new Date(),
-      });
-
-      if (api.currentHealthStatus !== "BLOCKED") {
-        await ApiModel.findByIdAndUpdate(api._id, {
-          currentHealthStatus: healthStatus,
-          degradationReason: null,
-        });
-      }
-
-      if (healthStatus === "FAILED") {
-        retryFailedApi(api).catch((err) =>
-          console.error(`Retry error for ${api.url}:`, err.message)
-        );
-      }
-    } catch (err) {
-      const responseTime = Date.now() - start;
-
-      const healthStatus = detectHealthStatus(
-        {
-          statusCode: err.response?.status || 0,
-          timedOut: err.code === "ECONNABORTED",
-          responseTime,
-        },
-        api.slaLatency
-      );
-
-      const failureType =
-        err.code === "ECONNABORTED" ? "TIMEOUT" : "SERVER_ERROR";
-
-      const previousStatus = api.currentHealthStatus;
-
-      if (previousStatus !== healthStatus) {
-        await logEvent({
-          apiId: api._id,
-          fromStatus: previousStatus,
-          toStatus: healthStatus,
-          reason: failureType,
-        });
-      }
-
-      await ApiHealthLog.create({
-        apiId: api._id,
-        statusCode: err.response?.status || 0,
-        responseTime,
-        isSuccess: false,
-        healthStatus,
-        failureType,
-        checkedAt: new Date(),
-      });
-
-      if (api.currentHealthStatus !== "BLOCKED") {
-        await ApiModel.findByIdAndUpdate(api._id, {
-          currentHealthStatus: healthStatus,
-          degradationReason: failureType,
-        });
-      }
-
-      if (healthStatus === "FAILED") {
-        retryFailedApi(api).catch((err) =>
-          console.error(`Retry error for ${api.url}:`, err.message)
-        );
-      }
-    }
+  if (running) {
+    console.warn("Previous monitoring cycle still running, skipping");
+    return { skipped: true };
   }
-
-  for (const api of apis) {
-    try {
-      await updateApiStatusBasedOnDegradation(api._id);
-    } catch (err) {
-      console.error(
-        `Degradation analysis error for ${api.url}:`,
-        err.message
-      );
-    }
+  running = true;
+  const t0 = Date.now();
+  try {
+    const apis = await Api.find({ isActive: true }).lean();
+    await pool(apis, CONCURRENCY, checkOne);
+    return { checked: apis.length, ms: Date.now() - t0 };
+  } finally {
+    running = false;
   }
 }
 
