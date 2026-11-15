@@ -111,7 +111,12 @@
 .form-feedback.error {
   color: var(--failed);
 }
-
+.form-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
 @media (max-width: 560px) {
   .form-row {
     grid-template-columns: 1fr;

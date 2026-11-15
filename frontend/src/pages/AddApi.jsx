@@ -2,14 +2,20 @@ import { useState } from "react";
 import "../styles/addapi.css";
 import api from "../api/api";
 
-// POST /apis -> Api.create(req.body), so any fields you send get saved.
-// Adjust this initial shape if your Api.model.js schema differs.
 const initialForm = {
   name: "",
   url: "",
-  method: "GET",
   slaLatency: 1000,
 };
+
+const SLA_MIN = 50;
+const SLA_MAX = 5000;
+
+function normalizeUrl(raw) {
+  const value = raw.trim();
+  if (!value) return value;
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+}
 
 function AddApi() {
   const [form, setForm] = useState(initialForm);
@@ -22,24 +28,54 @@ function AddApi() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    const sla = Number(form.slaLatency);
+    if (!Number.isFinite(sla) || sla < SLA_MIN || sla > SLA_MAX) {
+      setStatus({
+        state: "error",
+        message: `SLA must be between ${SLA_MIN} and ${SLA_MAX} ms.`,
+      });
+      return;
+    }
+
+    let url = normalizeUrl(form.url);
+    try {
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+    } catch {
+      setStatus({
+        state: "error",
+        message: "Enter a valid URL, e.g. https://api.example.com/health",
+      });
+      return;
+    }
+
     setStatus({ state: "loading", message: "" });
 
     try {
-      await api.post("/apis", form);
+      await api.post("/apis", {
+        name: form.name.trim(),
+        url,
+        method: "GET", // monitoring only supports GET
+        slaLatency: sla,
+      });
 
       setStatus({
         state: "success",
-        message: "API registered. Monitoring will pick it up shortly.",
+        message: "API registered. First check runs within 30 seconds.",
       });
 
       setForm(initialForm);
     } catch (err) {
-      setStatus({
-        state: "error",
-        message: err.response?.data?.error || err.message,
-      });
+      const data = err.response?.data;
+      let message = data?.message || data?.error || err.message;
+      if (err.response?.status === 400 && /duplicate|E11000/i.test(message)) {
+        message = "You are already monitoring this URL.";
+      }
+      setStatus({ state: "error", message });
     }
   }
+
   return (
     <div className="add-api-page">
       <div className="add-api-card glass-panel">
@@ -65,7 +101,10 @@ function AddApi() {
             Endpoint URL
             <input
               name="url"
-              type="url"
+              type="text"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={form.url}
               onChange={handleChange}
               placeholder="https://api.example.com/health"
@@ -73,28 +112,23 @@ function AddApi() {
             />
           </label>
 
-          <div className="form-row">
-            <label>
-              Method
-              <select name="method" value={form.method} onChange={handleChange}>
-                <option>GET</option>
-                <option>POST</option>
-                <option>PUT</option>
-                <option>DELETE</option>
-              </select>
-            </label>
-          </div>
           <label>
             SLA Latency (ms)
             <input
               name="slaLatency"
               type="number"
-              min="0"
+              min={SLA_MIN}
+              max={SLA_MAX}
               value={form.slaLatency}
               onChange={handleChange}
               required
             />
           </label>
+
+          <p className="form-hint">
+            Checks use GET requests only, every 30 seconds, so monitoring never
+            changes data on your API. SLA range: {SLA_MIN}–{SLA_MAX} ms.
+          </p>
 
           <button
             type="submit"
