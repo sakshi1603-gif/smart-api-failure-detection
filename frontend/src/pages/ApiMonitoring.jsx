@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import usePolling from "../hooks/usePolling";
+import { useAuth } from "../context/AuthContext";
 import "../styles/monitoring.css";
 
 function ApiMonitoring() {
@@ -14,6 +15,10 @@ function ApiMonitoring() {
   const [limit] = useState(5);
 
   const [totalPages, setTotalPages] = useState(1);
+  const [message, setMessage] = useState("");
+
+  const { user } = useAuth();
+  const isDemo = user?.email === "demo@smartapi.com";
 
   const fetchApis = async () => {
     try {
@@ -30,9 +35,33 @@ function ApiMonitoring() {
 
   usePolling(fetchApis, [page, search, status], 15000);
 
+  const handleDelete = async (item) => {
+    const ok = window.confirm(
+      `Delete "${item.name}"? Its history and events will be removed too.`,
+    );
+    if (!ok) return;
+
+    try {
+      await api.delete(`/apis/${item._id}`);
+      setMessage(`Deleted "${item.name}".`);
+
+      // If that was the last row on this page, go back one page
+      if (apis.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchApis();
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Couldn't delete this API.");
+    }
+  };
+
   return (
     <div className="monitoring-page">
       <h1>API Monitoring</h1>
+
+      {message && <p className="monitoring-message">{message}</p>}
+
       <div className="monitoring-toolbar">
         <input
           type="text"
@@ -87,6 +116,15 @@ function ApiMonitoring() {
                   <Link to={`/api/${apiItem._id}`} className="view-link">
                     View
                   </Link>
+                  {!isDemo && (
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() => handleDelete(apiItem)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

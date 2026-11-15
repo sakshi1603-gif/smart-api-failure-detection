@@ -20,6 +20,9 @@ router.get("/:id/retry-history", ApiController.getRetryHistory);
 // Blocked APIs
 router.get("/status/blocked", ApiController.getBlockedApis);
 
+//delete api 
+router.delete("/:id", ApiController.deleteApi);
+
 // Degradation
 router.get("/:id/degradation", ApiController.getApiDegradationStatus);
 router.get("/degradation/all", ApiController.getAllApisDegradationStatus);

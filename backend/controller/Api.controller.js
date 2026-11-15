@@ -82,6 +82,41 @@ exports.getApis = async (req, res) => {
   }
 };
 
+//DELETE /apis/:id
+exports.deleteApi = async (req, res) => {
+  try {
+    // Demo visitors share one workspace, so they can't delete from it
+    if (req.user.email === "demo@smartapi.com") {
+      return res.status(403).json({
+        success: false,
+        message: "Deleting is disabled in demo mode.",
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid API ID" });
+    }
+
+    const api = await Api.findOneAndDelete({ _id: id, owner: req.user._id });
+
+    if (!api) {
+      return res.status(404).json({ success: false, message: "API not found." });
+    }
+
+    // Remove this API's history and events too
+    await Promise.all([
+      ApiHealthLog.deleteMany({ apiId: id }),
+      Event.deleteMany({ apiId: id }),
+    ]);
+
+    res.status(200).json({ success: true, message: "API deleted." });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.getEvents = async (req, res) => {
   try {
     let { page = 1, limit = 10, status = "" } = req.query;
