@@ -26,10 +26,7 @@ router.delete("/:id", ApiController.deleteApi);
 // Degradation
 router.get("/:id/degradation", ApiController.getApiDegradationStatus);
 router.get("/degradation/all", ApiController.getAllApisDegradationStatus);
-router.post(
-  "/:id/degradation/update",
-  ApiController.updateApiDegradationStatus,
-);
+
 
 // Uptime
 router.get("/:id/uptime", ApiController.getApiUptime);

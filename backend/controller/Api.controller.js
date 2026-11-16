@@ -6,13 +6,90 @@ const mongoose = require("mongoose");
 const {
   analyzeApiDegradation,
   analyzeAllApisDegradation,
-  updateApiStatusBasedOnDegradation,
 } = require("../services/degradationAnalyzer.service");
+const { assertPublicHost } = require("../utils/ssrfGuard");
+
+const DEMO_EMAIL = "demo@smartapi.com";
+const MAX_APIS = Number(process.env.MAX_APIS_PER_USER || 10);
+const SLA_MIN = 50;
+const SLA_MAX = 5000; // = check timeout; a higher SLA could never trigger
+const STATUSES = ["PENDING", "HEALTHY", "DEGRADED", "FAILED", "BLOCKED"];
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function validateApiInput({ name, url, slaLatency }) {
+  const errors = [];
+
+  const cleanName = String(name || "").trim();
+  if (!cleanName) errors.push("Name is required.");
+
+  let raw = String(url || "").trim();
+  if (raw && !/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) raw = "https://" + raw;
+
+  let parsed = null;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    errors.push("Enter a valid URL, e.g. https://api.example.com/health");
+  }
+
+  if (parsed) {
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      errors.push("Only http:// and https:// URLs are supported.");
+    }
+    try {
+      assertPublicHost(parsed.hostname);
+    } catch {
+      errors.push("That address is private or not allowed.");
+    }
+  }
+
+  const sla = Number(slaLatency);
+  if (!Number.isFinite(sla) || sla < SLA_MIN || sla > SLA_MAX) {
+    errors.push(`SLA must be between ${SLA_MIN} and ${SLA_MAX} ms.`);
+  }
+
+  return {
+    errors,
+    value: {
+      name: cleanName,
+      url: parsed ? parsed.toString() : raw,
+      slaLatency: sla,
+    },
+  };
+}
+
 //POST /apis
 exports.registerApi = async (req, res) => {
   try {
+    if (req.user.email === DEMO_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        message: "Adding APIs is disabled in demo mode.",
+      });
+    }
+
+    const { errors, value } = validateApiInput(req.body);
+    if (errors.length) {
+      return res
+        .status(400)
+        .json({ success: false, message: errors[0], errors });
+    }
+
+    const existing = await Api.countDocuments({ owner: req.user._id });
+    if (existing >= MAX_APIS) {
+      return res.status(403).json({
+        success: false,
+        message: `Limit reached: you can monitor up to ${MAX_APIS} APIs.`,
+      });
+    }
+
+    // Only whitelisted fields: users can't set status, blockedUntil, isActive...
     const api = await Api.create({
-      ...req.body,
+      name: value.name,
+      url: value.url,
+      slaLatency: value.slaLatency,
+      method: "GET",
       owner: req.user._id,
     });
 
@@ -22,6 +99,12 @@ exports.registerApi = async (req, res) => {
       api,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "You are already monitoring this URL.",
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message,
@@ -30,28 +113,27 @@ exports.registerApi = async (req, res) => {
 };
 
 //GET /apis
-//GET /apis
 exports.getApis = async (req, res) => {
   try {
     let { page = 1, limit = 10, search = "", status = "" } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
+    page = Math.max(1, Number(page) || 1);
+    limit = Math.min(50, Math.max(1, Number(limit) || 10));
 
     const query = {
       owner: req.user._id,
     };
 
-    // Search by API name
+    // Search by API name (escaped: user input is never used as a raw regex)
     if (search) {
       query.name = {
-        $regex: search,
+        $regex: escapeRegex(String(search)),
         $options: "i",
       };
     }
 
     // Filter by health status
-    if (status) {
+    if (STATUSES.includes(status)) {
       query.currentHealthStatus = status;
     }
 
@@ -86,7 +168,7 @@ exports.getApis = async (req, res) => {
 exports.deleteApi = async (req, res) => {
   try {
     // Demo visitors share one workspace, so they can't delete from it
-    if (req.user.email === "demo@smartapi.com") {
+    if (req.user.email === DEMO_EMAIL) {
       return res.status(403).json({
         success: false,
         message: "Deleting is disabled in demo mode.",
@@ -117,12 +199,13 @@ exports.deleteApi = async (req, res) => {
   }
 };
 
+//GET /apis/events
 exports.getEvents = async (req, res) => {
   try {
     let { page = 1, limit = 10, status = "" } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
+    page = Math.max(1, Number(page) || 1);
+    limit = Math.min(50, Math.max(1, Number(limit) || 10));
 
     const userApis = await Api.find({ owner: req.user._id }, "_id");
 
@@ -135,7 +218,7 @@ exports.getEvents = async (req, res) => {
     };
 
     // Filter by status
-    if (status) {
+    if (STATUSES.includes(status)) {
       query.toStatus = status;
     }
 
@@ -162,34 +245,6 @@ exports.getEvents = async (req, res) => {
       success: false,
       error: err.message,
     });
-  }
-};
-// Utility function to log health check results
-exports.logHealthCheck = async (apiId, result) => {
-  try {
-    const healthLog = await ApiHealthLog.create({
-      apiId,
-      statusCode: result.statusCode,
-      responseTime: result.responseTime,
-      healthStatus: result.healthStatus, // "HEALTHY", "SLOW", "FAILED"
-      failureType: result.failureType || "NONE",
-      checkedAt: new Date(),
-    });
-
-    // Update Api.currentHealthStatus based on result
-    await Api.findByIdAndUpdate(
-      apiId,
-      {
-        currentHealthStatus: result.healthStatus,
-        degradationReason:
-          result.healthStatus === "FAILED" ? "API FAILURE" : null,
-      },
-      { new: true },
-    );
-    return healthLog;
-  } catch (error) {
-    console.error("Error logging health check:", error);
-    throw error;
   }
 };
 
@@ -235,12 +290,12 @@ exports.getApiHistory = async (req, res) => {
       history: enhancedHistory,
     });
   } catch (err) {
-    console.error("getApiHistoryEnhanced error:", err);
+    console.error("getApiHistory error:", err);
     return res.status(500).json({ error: "Failed to fetch API history" });
   }
 };
 
-//GET /apis/:id/retries
+//GET /apis/:id/retry-history
 exports.getRetryHistory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -249,7 +304,6 @@ exports.getRetryHistory = async (req, res) => {
       return res.status(400).json({ error: "Invalid API ID" });
     }
 
-    // Get API details
     const api = await Api.findOne({
       _id: id,
       owner: req.user._id,
@@ -262,15 +316,13 @@ exports.getRetryHistory = async (req, res) => {
       });
     }
 
-    // Get all retry attempts
     const retries = await ApiHealthLog.find({
       apiId: id,
-      isRetry: true, // ✅ Only retry attempts
+      isRetry: true,
     })
       .sort({ checkedAt: -1 })
       .limit(50);
 
-    // Stats
     const totalRetries = retries.length;
     const successfulRetries = retries.filter(
       (r) => r.healthStatus === "HEALTHY",
@@ -307,7 +359,7 @@ exports.getRetryHistory = async (req, res) => {
   }
 };
 
-//GET /apis/:id/degradation - check degradation status of single API
+//GET /apis/:id/degradation
 exports.getApiDegradationStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -337,7 +389,7 @@ exports.getApiDegradationStatus = async (req, res) => {
   }
 };
 
-//GET /apis/degradation/all - check degradation status of ALL APIs
+//GET /apis/degradation/all (scoped to the logged-in user)
 exports.getAllApisDegradationStatus = async (req, res) => {
   try {
     const degradationReport = await analyzeAllApisDegradation(req.user._id);
@@ -350,46 +402,9 @@ exports.getAllApisDegradationStatus = async (req, res) => {
   }
 };
 
-//POST /apis/:id/degradation/update - update API status based on degradation analysis
-exports.updateApiDegradationStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "Invalid API ID" });
-    }
-    const api = await Api.findOne({
-      _id: id,
-      owner: req.user._id,
-    });
-
-    if (!api) {
-      return res.status(404).json({
-        success: false,
-        message: "API not found.",
-      });
-    }
-
-    await updateApiStatusBasedOnDegradation(id);
-
-    return res.status(200).json({
-      success: true,
-      message: "API degradation status updated successfully",
-    });
-    return res
-      .status(200)
-      .json({ message: "API degradation status updated successfully" });
-  } catch (err) {
-    console.error("updateApiDegradationStatus error:", err);
-  }
-};
-
-//GET /apis/status/blocked - get all currently blocked APIs
+//GET /apis/status/blocked
 exports.getBlockedApis = async (req, res) => {
   try {
-    //   const blockedApis = await Api.find({
-    //     currentHealthStatus: "BLOCKED",
-    //     blockedUntil: { $gt: new Date() },
-    //   }).select("name url blockedUntil degradationReason");
     const blockedApis = await Api.find({
       owner: req.user._id,
       currentHealthStatus: "BLOCKED",
@@ -409,6 +424,10 @@ exports.getBlockedApis = async (req, res) => {
 //GET /apis/:id
 exports.getApiById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid API ID" });
+    }
+
     const api = await Api.findOne({
       _id: req.params.id,
       owner: req.user._id,
@@ -455,47 +474,42 @@ exports.getApiUptime = async (req, res) => {
       });
     }
 
+    // Counted in the database (no loading every log into memory).
+    // Retry checks are excluded so they don't skew uptime.
+    // Uptime = share of checks that were not FAILED.
     async function calculateUptime(days) {
       const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-      const logs = await ApiHealthLog.find({
-        apiId: id,
-        checkedAt: {
-          $gte: fromDate,
+      const rows = await ApiHealthLog.aggregate([
+        {
+          $match: {
+            apiId: new mongoose.Types.ObjectId(id),
+            checkedAt: { $gte: fromDate },
+            isRetry: { $ne: true },
+          },
         },
-      });
+        { $group: { _id: "$healthStatus", count: { $sum: 1 } } },
+      ]);
 
-      const totalChecks = logs.length;
-
-      const healthyChecks = logs.filter(
-        (log) => log.healthStatus === "HEALTHY",
-      ).length;
-
-      const failedChecks = logs.filter(
-        (log) => log.healthStatus === "FAILED",
-      ).length;
-
-      const slowChecks = logs.filter(
-        (log) => log.healthStatus === "SLOW",
-      ).length;
+      const c = Object.fromEntries(rows.map((r) => [r._id, r.count]));
+      const healthyChecks = c.HEALTHY || 0;
+      const degradedChecks = (c.DEGRADED || 0) + (c.SLOW || 0);
+      const failedChecks = c.FAILED || 0;
+      const totalChecks = healthyChecks + degradedChecks + failedChecks;
 
       const uptime =
         totalChecks === 0
           ? 0
-          : Number(((healthyChecks / totalChecks) * 100).toFixed(2));
+          : Number((((totalChecks - failedChecks) / totalChecks) * 100).toFixed(2));
 
-      return {
-        uptime,
-        totalChecks,
-        healthyChecks,
-        failedChecks,
-        slowChecks,
-      };
+      return { uptime, totalChecks, healthyChecks, degradedChecks, failedChecks };
     }
 
-    const last24Hours = await calculateUptime(1);
-    const last7Days = await calculateUptime(7);
-    const last30Days = await calculateUptime(30);
+    const [last24Hours, last7Days, last30Days] = await Promise.all([
+      calculateUptime(1),
+      calculateUptime(7),
+      calculateUptime(30),
+    ]);
 
     res.status(200).json({
       apiId: api._id,
